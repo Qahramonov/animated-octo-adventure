@@ -1,0 +1,23 @@
+# docker compose -f Server/deploy/docker-compose.yml up -d --build   (run from the repository root)
+services:
+  orol-server:
+    build:
+      context: ../..
+      dockerfile: Server/deploy/Dockerfile
+    image: orol-server:latest
+    container_name: orol-server
+    restart: unless-stopped
+    ports:
+      - "7777:7777/udp"   # game traffic (must be UDP)
+      - "8080:8080/tcp"   # /health and /status (optional, firewall it if you want)
+    environment:
+      OROL_SERVER_NAME: "DEMO SERVER #1"
+      OROL_REGION: "Asia"
+      OROL_MAX_PLAYERS: "100"
+      OROL_BOT_COUNT: "70"
+      OROL_TICK_RATE: "30"
+      # OROL_ADMIN_TOKEN: "set-a-long-random-token-to-enable-/admin"
+    volumes:
+      - orol-data:/data
+volumes:
+  orol-data:

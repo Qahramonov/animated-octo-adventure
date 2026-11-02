@@ -1,0 +1,18 @@
+* text=auto
+*.cs text eol=lf diff=csharp
+*.shader text eol=lf
+*.hlsl text eol=lf
+*.unity text eol=lf merge=unityyamlmerge
+*.prefab text eol=lf merge=unityyamlmerge
+*.asset text eol=lf merge=unityyamlmerge
+*.mat text eol=lf merge=unityyamlmerge
+*.meta text eol=lf
+*.asmdef text eol=lf
+*.json text eol=lf
+*.yml text eol=lf
+*.sh text eol=lf
+*.ttf binary
+*.png binary
+*.jpg binary
+*.wav binary
+*.ogg binary

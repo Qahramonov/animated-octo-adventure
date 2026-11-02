@@ -1,0 +1,14 @@
+{
+    "name": "Survival.Server",
+    "rootNamespace": "Survival.Server",
+    "references": ["Survival.Core", "Survival.World", "Survival.Gameplay", "Survival.Networking", "LiteNetLib"],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": true
+}

@@ -1,0 +1,14 @@
+{
+    "name": "Survival.Client",
+    "rootNamespace": "Survival.Client",
+    "references": ["Survival.Core", "Survival.World", "Survival.Gameplay", "Survival.Networking", "Survival.Server", "LiteNetLib", "Unity.InputSystem", "UnityEngine.UI", "Unity.RenderPipelines.Core.Runtime", "Unity.RenderPipelines.Universal.Runtime"],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

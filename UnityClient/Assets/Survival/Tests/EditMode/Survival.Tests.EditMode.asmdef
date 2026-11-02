@@ -1,0 +1,14 @@
+{
+    "name": "Survival.Tests.EditMode",
+    "rootNamespace": "Survival.Tests",
+    "references": ["UnityEngine.TestRunner", "UnityEditor.TestRunner", "Survival.Core", "Survival.World", "Survival.Gameplay", "Survival.Networking", "Survival.Server", "Survival.Client", "LiteNetLib"],
+    "includePlatforms": ["Editor"],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": true,
+    "precompiledReferences": ["nunit.framework.dll"],
+    "autoReferenced": false,
+    "defineConstraints": ["UNITY_INCLUDE_TESTS"],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

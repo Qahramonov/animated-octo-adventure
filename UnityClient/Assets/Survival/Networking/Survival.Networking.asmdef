@@ -1,0 +1,14 @@
+{
+    "name": "Survival.Networking",
+    "rootNamespace": "Survival.Networking",
+    "references": ["Survival.Core", "Survival.World", "Survival.Gameplay", "LiteNetLib"],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": true
+}

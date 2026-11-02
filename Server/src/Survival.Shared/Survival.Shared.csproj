@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    Compiles the engine-independent game code straight from the Unity project, so the dedicated
+    server and the Android client always run the very same simulation, protocol and world generator.
+  -->
+  <PropertyGroup>
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <AssemblyName>Survival.Shared</AssemblyName>
+    <RootNamespace>Survival</RootNamespace>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <NoWarn>$(NoWarn);CS1591;CS0618</NoWarn>
+    <UnityAssets>$(MSBuildThisFileDirectory)../../../UnityClient/Assets/</UnityAssets>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(UnityAssets)Plugins/LiteNetLib/**/*.cs" />
+    <Compile Include="$(UnityAssets)Survival/Core/**/*.cs" />
+    <Compile Include="$(UnityAssets)Survival/World/**/*.cs" />
+    <Compile Include="$(UnityAssets)Survival/Gameplay/**/*.cs" />
+    <Compile Include="$(UnityAssets)Survival/Networking/**/*.cs" />
+    <Compile Include="$(UnityAssets)Survival/Server/**/*.cs" />
+  </ItemGroup>
+</Project>

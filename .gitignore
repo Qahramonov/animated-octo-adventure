@@ -1,0 +1,51 @@
+# ---- Unity ----
+/UnityClient/[Ll]ibrary/
+/UnityClient/[Tt]emp/
+/UnityClient/[Oo]bj/
+/UnityClient/[Bb]uild/
+/UnityClient/[Bb]uilds/
+/UnityClient/[Ll]ogs/
+/UnityClient/[Uu]ser[Ss]ettings/
+/UnityClient/[Mm]emoryCaptures/
+/UnityClient/[Rr]ecordings/
+/UnityClient/Assets/Plugins/Editor/JetBrains*
+/UnityClient/.vs/
+/UnityClient/.idea/
+/UnityClient/*.csproj
+/UnityClient/*.sln
+/UnityClient/*.slnx
+/UnityClient/*.unityproj
+/UnityClient/*.user
+/UnityClient/*.pidb
+/UnityClient/*.booproj
+/UnityClient/*.svd
+/UnityClient/*.pdb
+/UnityClient/*.mdb
+/UnityClient/*.opendb
+/UnityClient/*.VC.db
+/UnityClient/sysinfo.txt
+/UnityClient/crashlytics-build.properties
+*.apk
+*.aab
+*.unitypackage
+*.app
+
+# ---- GameCI / build output ----
+/build/
+/builds/
+/artifacts/
+
+# ---- .NET ----
+**/bin/
+**/obj/
+/Server/out/
+/Server/data/
+*.swp
+
+# ---- secrets (never commit) ----
+*.keystore
+*.jks
+*.ulf
+*.alf
+.env
+/tools/compile-check/.cache/

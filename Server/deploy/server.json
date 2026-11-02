@@ -1,0 +1,36 @@
+{
+  // OROL Survival dedicated server configuration (comments allowed).
+  // Every key can be overridden by an environment variable (OROL_BOT_COUNT=80) or an argument (--botCount 80).
+  "serverName": "DEMO SERVER #1",
+  "mapName": "Demo Island",
+  "region": "Asia",
+
+  "bindAddress": "0.0.0.0",
+  "port": 7777,
+  "maxPlayers": 100,
+  "tickRate": 30,
+  "snapshotInterval": 1,
+  "interestRadius": 320,
+  "maxEntitiesPerSnapshot": 80,
+
+  "worldSeed": 20261102,
+  "worldSize": 5000,
+  "resourceDensity": 1.0,
+  "vegetationDensity": 1.0,
+  "animalDensity": 1.0,
+  "eventFrequency": 1.0,
+  "dayLengthMinutes": 48,
+
+  "botCount": 70,
+  "botFullSimRadius": 400,
+  "distantBotTickDivider": 6,
+  "maxBotThinksPerTick": 12,
+
+  "respawnDelaySeconds": 6,
+  "reconnectGraceSeconds": 90,
+
+  "dataDirectory": "data",
+  "autosaveSeconds": 60,
+  "statusHttpPort": 8080,
+  "adminToken": ""
+}
