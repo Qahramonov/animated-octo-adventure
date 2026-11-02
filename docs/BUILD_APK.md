@@ -3,37 +3,25 @@
 APK GitHub serverlarida (GameCI Docker image `unityci/editor:ubuntu-6000.3.26f1-android-3`) yig'iladi. Sizga faqat telefon
 va brauzer kerak. Unity build uchun **faollashtirilgan Unity litsenziyasi** majburiy — bu Unity talabi, uni chetlab bo'lmaydi.
 
-## 1. Unity litsenziyasi (bir martalik)
+## 1. Unity litsenziyasi (bir martalik, faqat telefon)
 
-### Kerakli GitHub Secrets
+Bepul **Unity Personal** litsenziyasi uchun faqat Unity akkauntining email va paroli kerak. GameCI (2026) build boshida
+Unity'ning litsenziya serveridan Personal o'rinni oladi va build tugagach qaytaradi. Kompyuter, Unity Hub yoki `.ulf` fayl kerak emas.
+
+1. https://id.unity.com da bepul akkaunt oching (yoki mavjudiga kiring).
+   - Google/Apple orqali kirgan bo'lsangiz parolingiz yo'q: chiqib, **Forgot password** orqali parol o'rnating.
+   - **Ikki bosqichli himoya (2FA) o'chiq bo'lsin** — bulut serveri SMS/kodni kirita olmaydi. Xohlasangiz faqat build uchun alohida akkaunt oching.
+2. GitHub (brauzerda "Desktop site") → repozitoriy → **Settings → Secrets and variables → Actions → New repository secret**:
 
 | Secret | Qiymat |
 |---|---|
-| `UNITY_EMAIL` | Unity akkauntingiz emaili |
-| `UNITY_PASSWORD` | Unity akkaunti paroli |
-| `UNITY_LICENSE` | `Unity_lic.ulf` faylining **to'liq matni** (Personal litsenziya uchun) |
-| `UNITY_SERIAL` | faqat Unity Plus/Pro bo'lsa (`UNITY_LICENSE` o'rniga) |
+| `UNITY_EMAIL` | Unity akkaunt emaili |
+| `UNITY_PASSWORD` | Unity akkaunt paroli |
 
-Secrets qo'shish: GitHub (brauzerda "Desktop site") → repozitoriy → **Settings → Secrets and variables → Actions → New repository secret**.
-Token/parollar hech qachon kodga yozilmaydi; workflow ularni faqat secrets'dan oladi.
+Token/parollar kodga yozilmaydi; workflow ularni faqat secrets'dan oladi va logda yashiradi.
 
-### `Unity_lic.ulf` ni kompyutersiz olish (GitHub Codespaces)
-
-Personal litsenziya fayli Unity Hub orqali yaratiladi. Kompyuter bo'lmasa, Unity Hub'ni bulutdagi Linux desktopda ishga tushiramiz:
-
-1. GitHub'da repozitoriy → **Code → Codespaces → ⋯ → New with options** → *Dev container configuration*: **Unity license helper** → *Create*.
-   (Bepul Codespaces limiti bu ish uchun yetarli.)
-2. Codespace tayyor bo'lgach **Ports** bo'limida `6080` (Desktop) portini brauzerda oching → *Connect* → parol: `orol`.
-3. Desktopdagi terminalda: `~/start-unity-hub.sh` → Unity Hub ochiladi → **Sign in** (brauzer oynasida Unity akkauntga kiring).
-4. Unity Hub: **Preferences → Licenses → Add → Get a free personal license** (*Add* tugmasini albatta bosing — fayl shunda yaratiladi).
-5. Terminalda: `~/show-license.sh` → chiqqan butun matnni (`<?xml ...` dan `</root>` gacha) nusxalab `UNITY_LICENSE` secret'iga qo'ying.
-6. Codespace'ni o'chiring (*Stop/Delete*), aks holda bepul soatlar sarflanadi.
-
-> Bu yordamchi (`.devcontainer/unity-license`) shu sessiyada Unity hisobisiz **sinab ko'rilmagan** (login sizning akkauntingizni
-> talab qiladi). Muammo bo'lsa: istalgan kompyuterda Unity Hub orqali faollashtirib, `.ulf` faylni oling — GameCI
-> hujjatiga ko'ra fayl platformaga bog'liq emas (Windows/Mac/Linux'dagi fayl Ubuntu runnerda ishlaydi).
-> Joylashuvi: Windows `C:\ProgramData\Unity\Unity_lic.ulf`, macOS `/Library/Application Support/Unity/Unity_lic.ulf`,
-> Linux `~/.local/share/unity3d/Unity/Unity_lic.ulf`.
+Ixtiyoriy: Plus/Pro uchun `UNITY_SERIAL`; Enterprise `.ulf` fayli bo'lsa `UNITY_LICENSE` (bu holda fayl ishlatiladi).
+`.devcontainer/unity-license` (Codespaces + Unity Hub) endi shart emas — Unity Personal uchun `.ulf` olishni to'xtatgan.
 
 ## 2. Build'ni ishga tushirish
 
@@ -69,7 +57,7 @@ U shader va IL2CPP'ni tekshirmaydi; buni faqat haqiqiy Unity build qiladi.
 | Belgi | Sabab / yechim |
 |---|---|
 | `Unity license is not configured` | Secrets qo'shilmagan yoki nomi xato (yuqoridagi jadval). |
-| `No valid Unity Editor license found` / activation xatosi | `UNITY_LICENSE` noto'liq nusxalangan (boshi/oxiri kesilgan) yoki boshqa akkauntniki. Qayta faollashtiring. Email/parol aynan shu akkauntniki bo'lsin. |
+| `No valid Unity Editor license found` / activation xatosi | Email/parol xato, akkauntda 2FA yoqilgan yoki Personal o'rinlar band (boshqa joyda faollashtirilgan Unity'lar). id.unity.com da 2FA ni o'chiring, parolni tekshiring; *Subscriptions/Seats* da eski aktivatsiyalarni bo'shating. |
 | `No space left on device` | Workflow disk tozalaydi; baribir bo'lsa Library keshini o'chiring (*Actions → Caches*). |
 | `Project validation failed` | Build oldidan `ProjectValidator` ishlaydi: log'da `[Validate]` qatorlarini qidiring (shader xatosi, missing script, yo'q resurs). |
 | Shader xatosi (`Shader error OROL/...`) | Log'da qator raqami bor. O'yin baribir URP fallback materiallariga o'tadi, lekin xatoni tuzatish kerak. |

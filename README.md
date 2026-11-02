@@ -36,7 +36,7 @@ Server/                          .NET 8 dedicated server (Linux), testlar, load-
 config/serverlist.json           O'yindagi server ro'yxati (APK'ni qayta yig'masdan IP o'zgartirish)
 tools/unity-compile-check/       Unity litsenziyasisiz C# kompilyatsiya tekshiruvi
 .github/workflows/               Android APK, Dedicated Server, Unity Compile Check
-.devcontainer/unity-license/     Kompyutersiz Unity litsenziyasini olish uchun Codespaces yordamchisi
+.devcontainer/unity-license/     (ixtiyoriy) Unity Hub'ni Codespaces'da ochish yordamchisi
 ```
 
 `Core/World/Gameplay/Networking/Server` kodi **bir vaqtning o'zida** Unity'da (telefon) va .NET serverda kompilyatsiya
@@ -44,7 +44,7 @@ qilinadi — server va o'yin har doim aynan bir xil fizika, protokol va orol gen
 
 ## Tezkor start (telefondan)
 
-1. **APK**: [docs/BUILD_APK.md](docs/BUILD_APK.md) bo'yicha Unity secrets'ni bir marta qo'shing → *Actions → Android APK → Run workflow* →
+1. **APK**: GitHub secrets'ga `UNITY_EMAIL` va `UNITY_PASSWORD` qo'shing ([docs/BUILD_APK.md](docs/BUILD_APK.md)) → *Actions → Android APK → Run workflow* →
    tayyor bo'lgach *Releases → apk-latest → OROL-Survival.apk*.
 2. **Serversiz sinash**: o'yinda *SERVERLAR → OFLAYN MASHQ* (telefonning o'zida lokal server + botlar; bu onlayn multiplayer emas).
 3. **Ikki telefon bitta Wi-Fi'da**: birinchisida *WI-FI ORQALI HOST (LAN)*, ikkinchisida *LAN O'YINLARNI TOPISH*.

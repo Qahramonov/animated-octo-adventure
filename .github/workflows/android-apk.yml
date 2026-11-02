@@ -4,8 +4,10 @@
 #  3. Download the APK from the run's Artifacts, or from the "apk-latest" GitHub Release
 #     (direct .apk link that opens on a phone).
 #
-# Required secrets (Personal license):  UNITY_LICENSE (contents of Unity_lic.ulf), UNITY_EMAIL, UNITY_PASSWORD
-#   or for Plus/Pro:                    UNITY_SERIAL, UNITY_EMAIL, UNITY_PASSWORD
+# Required secrets (free Personal license): UNITY_EMAIL, UNITY_PASSWORD
+#   GameCI acquires a Personal seat from Unity's licensing service with the account credentials and
+#   returns it after the build - no computer and no .ulf file needed.
+# Plus/Pro: add UNITY_SERIAL as well.  Enterprise .ulf: UNITY_LICENSE (optional, overrides the account route).
 # Optional release signing (Google Play):
 #   ANDROID_KEYSTORE_BASE64, ANDROID_KEYSTORE_PASS, ANDROID_KEYALIAS_NAME, ANDROID_KEYALIAS_PASS
 # Without signing secrets the APK is signed with Unity's debug key (installable on your own phone).
@@ -55,7 +57,6 @@ jobs:
           missing=""
           [ -z "$UNITY_EMAIL" ] && missing="$missing UNITY_EMAIL"
           [ -z "$UNITY_PASSWORD" ] && missing="$missing UNITY_PASSWORD"
-          if [ -z "$UNITY_LICENSE" ] && [ -z "$UNITY_SERIAL" ]; then missing="$missing UNITY_LICENSE"; fi
           if [ -n "$missing" ]; then
             echo "::error title=Unity license is not configured::Missing repository secrets:$missing. Follow docs/BUILD_APK.md (Unity litsenziyasi). No APK can be built without them."
             {
@@ -68,7 +69,9 @@ jobs:
             } >> "$GITHUB_STEP_SUMMARY"
             exit 1
           fi
-          echo "Unity license secrets present."
+          if [ -n "$UNITY_SERIAL" ]; then echo "Licensing: serial (Plus/Pro)";
+          elif [ -n "$UNITY_LICENSE" ]; then echo "Licensing: license file";
+          else echo "Licensing: free Personal seat via Unity account (returned after the build)"; fi
 
       - uses: actions/checkout@v4
         with:
