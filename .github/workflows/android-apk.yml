@@ -46,6 +46,10 @@ jobs:
     name: Build Android (${{ inputs.exportType || 'apk' }})
     runs-on: ubuntu-latest
     timeout-minutes: 150
+    outputs:
+      artifact: ${{ env.BUILD_NAME }}-${{ steps.out.outputs.ext }}-${{ github.run_number }}
+      file: ${{ steps.out.outputs.name }}
+      ext: ${{ steps.out.outputs.ext }}
     steps:
       - name: Check Unity license secrets
         env:
@@ -118,7 +122,8 @@ jobs:
           androidKeystorePass: ${{ secrets.ANDROID_KEYSTORE_PASS }}
           androidKeyaliasName: ${{ secrets.ANDROID_KEYALIAS_NAME }}
           androidKeyaliasPass: ${{ secrets.ANDROID_KEYALIAS_PASS }}
-          customParameters: -development ${{ inputs.development && 'true' || 'false' }}
+          # x86_64 is included so the same APK can be launched on the CI emulator (smoke test below)
+          customParameters: -development ${{ inputs.development && 'true' || 'false' }} -androidArch arm64+x86_64
 
       - name: Collect build output
         id: out
@@ -180,3 +185,40 @@ jobs:
           cp "${{ steps.out.outputs.file }}" OROL-Survival.apk
           gh release upload "$RELEASE_TAG" OROL-Survival.apk "${{ steps.out.outputs.file }}.sha256" --clobber
           echo "Download: https://github.com/${GITHUB_REPOSITORY}/releases/download/${RELEASE_TAG}/OROL-Survival.apk" >> "$GITHUB_STEP_SUMMARY"
+
+  # Launches the freshly built APK on an Android emulator (x86_64) and records what happens:
+  # screenshots over ~90 s + logcat. Errors are printed into this job's log.
+  smoke-test:
+    name: Emulator smoke test
+    needs: android
+    if: needs.android.outputs.ext == 'apk'
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: ${{ needs.android.outputs.artifact }}
+          path: apk
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Run on emulator
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          arch: x86_64
+          target: google_apis
+          force-avd-creation: true
+          emulator-options: -no-window -no-audio -no-boot-anim -gpu swiftshader_indirect -camera-back none -skin 1920x1080
+          disable-animations: true
+          script: bash tools/ci/emulator-smoke.sh apk/${{ needs.android.outputs.file }} smoke
+      - name: Upload smoke-test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: smoke-test-${{ github.run_number }}
+          path: smoke
+          retention-days: 14

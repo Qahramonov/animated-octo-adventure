@@ -145,7 +145,10 @@ namespace Survival.Editor
             PlayerSettings.SetScriptingBackend(android, ScriptingImplementation.IL2CPP);
             PlayerSettings.SetManagedStrippingLevel(android, ManagedStrippingLevel.Low);
             PlayerSettings.SetApiCompatibilityLevel(android, ApiCompatibilityLevel.NET_Standard);
-            PlayerSettings.Android.targetArchitectures = AndroidArchitecture.ARM64;
+            // "-androidArch arm64+x86_64" adds x86_64 for the CI emulator smoke test
+            PlayerSettings.Android.targetArchitectures = Get(args, "androidArch", "arm64").Contains("x86_64")
+                ? AndroidArchitecture.ARM64 | AndroidArchitecture.X86_64
+                : AndroidArchitecture.ARM64;
             PlayerSettings.Android.minSdkVersion = AndroidSdkVersions.AndroidApiLevel26;
             PlayerSettings.Android.targetSdkVersion = AndroidSdkVersions.AndroidApiLevelAuto;
             PlayerSettings.Android.forceInternetPermission = true;
@@ -153,7 +156,7 @@ namespace Survival.Editor
             PlayerSettings.Android.renderOutsideSafeArea = true;
             PlayerSettings.Android.startInFullscreen = true;
 
-            PlayerSettings.defaultInterfaceOrientation = UIOrientation.AutoRotation;
+            PlayerSettings.defaultInterfaceOrientation = UIOrientation.LandscapeLeft;
             PlayerSettings.allowedAutorotateToLandscapeLeft = true;
             PlayerSettings.allowedAutorotateToLandscapeRight = true;
             PlayerSettings.allowedAutorotateToPortrait = false;

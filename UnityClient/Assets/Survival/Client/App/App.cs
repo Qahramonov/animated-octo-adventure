@@ -41,29 +41,46 @@ namespace Survival.Client
 
         private void Initialize()
         {
+            // Scene wiring and error reporting first: if any service below fails, the game must still
+            // start and show the error on screen instead of freezing after the Unity splash.
+            SceneManager.sceneLoaded += OnSceneLoaded;
+            gameObject.AddComponent<ErrorOverlay>();
             Application.runInBackground = true;
             Screen.sleepTimeout = SleepTimeout.NeverSleep;
+            Screen.orientation = ScreenOrientation.LandscapeLeft;
 
-            Settings = GameSettings.Load();
-            Profile = PlayerProfile.LoadOrCreate();
+            Step("settings", () => Settings = GameSettings.Load());
+            if (Settings == null) Settings = new GameSettings();
+            Step("profile", () => Profile = PlayerProfile.LoadOrCreate());
             Loc.Language = Settings.Language;
-            QualityManager.Apply(Settings);
+            Step("quality", () => QualityManager.Apply(Settings));
+            Step("materials", () => Materials = new MaterialLibrary());
+            Step("audio", () => Audio = gameObject.AddComponent<AudioManager>());
+            Step("scenes", () => Scenes = gameObject.AddComponent<SceneFlow>());
+            Step("servers", () => Servers = new ServerDirectory());
+            Step("session", () => Session = new Session());
+            Step("eventsystem", () => UIRoot.EnsureEventSystem(transform));
 
-            Materials = new MaterialLibrary();
-            Audio = gameObject.AddComponent<AudioManager>();
-            Scenes = gameObject.AddComponent<SceneFlow>();
-            Servers = new ServerDirectory();
-            Session = new Session();
-            UIRoot.EnsureEventSystem(transform);
-
-            SceneManager.sceneLoaded += OnSceneLoaded;
             Log.Info("App", $"{GameInfo.Title} {GameInfo.Version} | {SystemInfo.deviceModel} | {SystemInfo.graphicsDeviceType} | " +
                             $"{SystemInfo.systemMemorySize} MB RAM | quality {Settings.Preset}");
+        }
+
+        private static void Step(string name, System.Action action)
+        {
+            try
+            {
+                action();
+            }
+            catch (System.Exception e)
+            {
+                Debug.LogError($"[App] Startup step '{name}' failed: {e}");
+            }
         }
 
         private static void OnSceneLoaded(Scene scene, LoadSceneMode mode)
         {
             if (mode != LoadSceneMode.Single) return;
+            Debug.Log("[App] Scene loaded: " + scene.name);
             var root = new GameObject("[" + scene.name + "Controller]");
             switch (scene.name)
             {

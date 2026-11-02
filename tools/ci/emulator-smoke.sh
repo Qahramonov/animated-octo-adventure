@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+# Installs the APK on a running emulator, launches it, takes screenshots and collects logcat.
+# Usage: emulator-smoke.sh <apk> <outdir>
+set -u
+APK="$1"; OUT="$2"; PKG=com.qahramonov.orol
+mkdir -p "$OUT"
+adb wait-for-device
+adb shell getprop ro.product.cpu.abilist
+adb logcat -c || true
+adb install -r -g "$APK" || { echo "::error::adb install failed"; exit 1; }
+adb shell monkey -p "$PKG" -c android.intent.category.LAUNCHER 1
+for t in 5 10 20 30 45 60 90; do
+  prev=${last:-0}; sleep $((t - prev)); last=$t
+  adb exec-out screencap -p > "$OUT/screen_${t}s.png" || true
+  pid=$(adb shell pidof "$PKG" | tr -d '\r')
+  echo "t=${t}s pid=${pid:-<not running>}"
+done
+# Tap the centre (skip intro / dismiss overlays) and capture once more
+adb shell input tap 960 540; sleep 8
+adb exec-out screencap -p > "$OUT/screen_after_tap.png" || true
+adb logcat -d -v time > "$OUT/logcat.txt" || true
+grep -E "Unity|AndroidRuntime|DEBUG|libc|CRASH|IL2CPP|\[App\]|\[Boot\]" "$OUT/logcat.txt" > "$OUT/logcat-unity.txt" || true
+adb shell cat /sdcard/Android/data/$PKG/files/orol-log.txt > "$OUT/orol-log.txt" 2>/dev/null || true
+echo "===== Unity / crash log (filtered, last 400 lines) ====="
+tail -n 400 "$OUT/logcat-unity.txt"
+echo "===== Errors ====="
+grep -nE "Exception|Error|FATAL|SIGSEGV|SIGABRT" "$OUT/logcat-unity.txt" | head -n 120 || true
+pid=$(adb shell pidof "$PKG" | tr -d '\r')
+if [ -z "$pid" ]; then echo "::error::Game process is not running at the end (crashed or exited)"; fi
+exit 0
