@@ -98,7 +98,7 @@ jobs:
 
       - name: Build with Unity (GameCI)
         id: build
-        uses: game-ci/unity-builder@v4
+        uses: game-ci/unity-builder@v6.0.0
         env:
           UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
           UNITY_SERIAL: ${{ secrets.UNITY_SERIAL }}
