@@ -25,6 +25,7 @@ namespace Survival.Editor
         public const string ProductName = "OROL Survival";
         public const string CompanyName = "Qahramonov";
 
+        private static readonly string Eol = Environment.NewLine;
         private static readonly string[] SecretArgs = { "androidKeystorePass", "androidKeyaliasName", "androidKeyaliasPass" };
 
         [MenuItem("OROL/Build/Android APK (debug-signed)")]
@@ -109,6 +110,12 @@ namespace Survival.Editor
                 File.WriteAllText(Path.Combine(string.IsNullOrEmpty(dir) ? "." : dir, "build-info.txt"),
                     $"product={ProductName}\nversion={PlayerSettings.bundleVersion}\nversionCode={PlayerSettings.Android.bundleVersionCode}\n" +
                     $"unity={Application.unityVersion}\nfile={Path.GetFileName(path)}\nsizeBytes={summary.totalSize}\nbuiltUtc={DateTime.UtcNow:O}\n");
+                // GameCI's validator reads this exact report from stdout (same format as its default build script)
+                string gameCiReport = Eol + "###########################" + Eol + "#      Build results      #" + Eol + "###########################" + Eol +
+                                $"Duration: {summary.totalTime}" + Eol + $"Warnings: {summary.totalWarnings}" + Eol +
+                                $"Errors: {summary.totalErrors}" + Eol + $"Size: {summary.totalSize} bytes" + Eol + "Build succeeded!" + Eol;
+                Console.WriteLine(gameCiReport);
+                Debug.Log(gameCiReport);
                 Finish(exitOnFinish, 0, "Build succeeded: " + path);
             }
             else
