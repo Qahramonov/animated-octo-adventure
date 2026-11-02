@@ -1,0 +1,6 @@
+{
+  "serverListUrl": "https://raw.githubusercontent.com/Qahramonov/animated-octo-adventure/HEAD/config/serverlist.json",
+  "servers": [
+    { "name": "DEMO SERVER #1", "host": "", "port": 7777, "region": "Asia", "map": "Demo Island" }
+  ]
+}

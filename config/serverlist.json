@@ -1,0 +1,11 @@
+{
+  "servers": [
+    {
+      "name": "DEMO SERVER #1",
+      "host": "",
+      "port": 7777,
+      "region": "Asia",
+      "map": "Demo Island"
+    }
+  ]
+}
