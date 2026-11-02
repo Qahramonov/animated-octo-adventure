@@ -1,0 +1,112 @@
+# Dedicated server CI (no Unity license needed):
+#   build -> unit + real-UDP integration tests -> 100-client network load test -> Linux binaries
+#   -> Docker image on GitHub Container Registry (ghcr.io/<owner>/orol-server).
+name: Dedicated Server
+
+on:
+  push:
+    paths:
+      - "Server/**"
+      - "UnityClient/Assets/Plugins/LiteNetLib/**"
+      - "UnityClient/Assets/Survival/Core/**"
+      - "UnityClient/Assets/Survival/World/**"
+      - "UnityClient/Assets/Survival/Gameplay/**"
+      - "UnityClient/Assets/Survival/Networking/**"
+      - "UnityClient/Assets/Survival/Server/**"
+      - ".github/workflows/server.yml"
+  workflow_dispatch:
+    inputs:
+      publishImage:
+        description: "Push the Docker image to ghcr.io"
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: server-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Build, test, load test
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+
+      - name: Build
+        run: dotnet build Server/Survival.Server.sln -c Release
+
+      - name: Unit + integration tests (real UDP on loopback)
+        run: dotnet test Server/tests/Survival.Tests -c Release --no-build --logger "console;verbosity=normal"
+
+      - name: Load test - 100 clients, 70 bots
+        run: |
+          set -e
+          cd Server/src/Survival.Server.Host/bin/Release/net8.0
+          ./orol-server --no-console --port 17777 --statusHttpPort 18080 --botCount 70 > server.log 2>&1 &
+          SERVER_PID=$!
+          for i in $(seq 1 60); do curl -sf localhost:18080/health >/dev/null && break; sleep 1; done
+          cd "$GITHUB_WORKSPACE/Server/tools/Survival.LoadTest/bin/Release/net8.0"
+          ./orol-loadtest --port 17777 --clients 100 --duration 45 --ramp 20 --min-connected-percent 95 | tee loadtest.log
+          curl -s localhost:18080/status | tee status.json
+          kill $SERVER_PID || true
+          {
+            echo "## Load test (100 real UDP clients)"
+            echo '```'
+            tail -4 loadtest.log
+            echo '```'
+            echo '```json'
+            cat status.json
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Publish Linux binaries
+        run: |
+          set -e
+          dotnet publish Server/src/Survival.Server.Host -c Release -r linux-x64 --self-contained true -p:PublishSingleFile=true -o out/linux-x64
+          dotnet publish Server/src/Survival.Server.Host -c Release -r linux-arm64 --self-contained true -p:PublishSingleFile=true -o out/linux-arm64
+          cp Server/deploy/server.json Server/deploy/orol-server.service out/linux-x64/
+          cp Server/deploy/server.json Server/deploy/orol-server.service out/linux-arm64/
+          tar -czf orol-server-linux-x64.tar.gz -C out/linux-x64 .
+          tar -czf orol-server-linux-arm64.tar.gz -C out/linux-arm64 .
+          ls -lh *.tar.gz
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: orol-server-linux
+          path: |
+            orol-server-linux-x64.tar.gz
+            orol-server-linux-arm64.tar.gz
+          retention-days: 30
+
+  docker:
+    name: Docker image (ghcr.io)
+    needs: test
+    if: github.event_name == 'workflow_dispatch' && inputs.publishImage || github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Image name (lowercase owner)
+        id: img
+        run: echo "name=ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/orol-server" >> "$GITHUB_OUTPUT"
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: Server/deploy/Dockerfile
+          push: true
+          tags: |
+            ${{ steps.img.outputs.name }}:latest
+            ${{ steps.img.outputs.name }}:${{ github.sha }}

@@ -11,6 +11,8 @@
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
     <NoWarn>$(NoWarn);CS1591;CS0618</NoWarn>
     <UnityAssets>$(MSBuildThisFileDirectory)../../../UnityClient/Assets/</UnityAssets>
+    <!-- Lets the load test emulate mobile latency/packet loss (inactive unless enabled at runtime) -->
+    <DefineConstants>$(DefineConstants);SIMULATE_NETWORK</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(UnityAssets)Plugins/LiteNetLib/**/*.cs" />

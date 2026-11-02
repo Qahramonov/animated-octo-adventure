@@ -1,0 +1,20 @@
+{
+  // One-time helper to get a Unity Personal license file (Unity_lic.ulf) WITHOUT a computer:
+  // a small Linux desktop in GitHub Codespaces, opened in the phone's browser, with Unity Hub.
+  // Steps: docs/BUILD_APK.md -> "Unity litsenziyasi". Stop/delete the codespace afterwards.
+  "name": "Unity license helper",
+  "image": "mcr.microsoft.com/devcontainers/base:bookworm",
+  "features": {
+    "ghcr.io/devcontainers/features/desktop-lite:1": {
+      "password": "orol",
+      "webPort": "6080",
+      "vncPort": "5901"
+    }
+  },
+  "forwardPorts": [6080],
+  "portsAttributes": {
+    "6080": { "label": "Desktop (noVNC, password: orol)", "onAutoForward": "openBrowser" }
+  },
+  "postCreateCommand": "bash .devcontainer/unity-license/install-unity-hub.sh",
+  "hostRequirements": { "cpus": 2, "memory": "4gb" }
+}

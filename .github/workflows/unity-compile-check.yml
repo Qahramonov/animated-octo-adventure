@@ -1,0 +1,48 @@
+# License-free C# compile check of the Unity project (player + editor passes) against the real
+# Unity 6 reference assemblies and package sources from the public GameCI editor image.
+# Gives fast feedback even before the Unity license secrets are configured. It does not compile
+# shaders or run IL2CPP - the Android APK workflow does the real build.
+name: Unity Compile Check
+
+on:
+  push:
+    paths:
+      - "UnityClient/Assets/**"
+      - "UnityClient/Packages/**"
+      - "UnityClient/ProjectSettings/ProjectVersion.txt"
+      - "tools/unity-compile-check/**"
+      - ".github/workflows/unity-compile-check.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: compile-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  compile:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - name: Free disk space
+        uses: jlumbroso/free-disk-space@v1.3.1
+        with:
+          tool-cache: false
+          android: true
+          dotnet: false
+          haskell: true
+          large-packages: false
+          docker-images: true
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+      - name: Read Unity version
+        id: v
+        run: echo "version=$(grep -oP 'm_EditorVersion:\s*\K\S+' UnityClient/ProjectSettings/ProjectVersion.txt)" >> "$GITHUB_OUTPUT"
+      - name: Extract Unity reference assemblies (no license)
+        run: tools/unity-compile-check/extract.sh "${{ steps.v.outputs.version }}" "$RUNNER_TEMP/unity"
+      - name: Compile check
+        run: python3 tools/unity-compile-check/compile_check.py --unity "$RUNNER_TEMP/unity" --project UnityClient

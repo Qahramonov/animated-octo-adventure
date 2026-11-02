@@ -167,7 +167,7 @@ namespace Survival.Client.Rendering
             _icoT1 = t1;
         }
 
-        public Mesh ToMesh(string name, bool recalcBounds = true)
+        public Mesh ToMesh(string name, bool recalcBounds = true, bool keepReadable = false)
         {
             var m = new Mesh { name = name };
             if (_v.Count > 65000) m.indexFormat = IndexFormat.UInt32;
@@ -175,7 +175,7 @@ namespace Survival.Client.Rendering
             m.SetNormals(_n);
             m.SetColors(_c);
             m.SetTriangles(_t, 0, recalcBounds);
-            m.UploadMeshData(true);
+            m.UploadMeshData(!keepReadable);
             return m;
         }
 

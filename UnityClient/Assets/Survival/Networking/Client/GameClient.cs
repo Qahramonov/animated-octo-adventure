@@ -74,6 +74,19 @@ namespace Survival.Networking
             _net.Start();
         }
 
+        /// <summary>
+        /// Emulates a bad mobile network on this client (load tests). Only effective in builds that
+        /// define SIMULATE_NETWORK (the .NET test tools do; the game does not).
+        /// </summary>
+        public void SimulateNetwork(int minLatencyMs, int maxLatencyMs, int lossPercent)
+        {
+            _net.SimulateLatency = maxLatencyMs > 0;
+            _net.SimulationMinLatency = minLatencyMs;
+            _net.SimulationMaxLatency = maxLatencyMs;
+            _net.SimulatePacketLoss = lossPercent > 0;
+            _net.SimulationPacketLossChance = lossPercent;
+        }
+
         public string ClientVersion { get; }
         public ClientState State { get; private set; } = ClientState.Idle;
         public string SessionToken { get; private set; }

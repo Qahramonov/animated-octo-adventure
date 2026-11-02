@@ -1,0 +1,179 @@
+# Builds the Android game in the cloud with Unity 6 (GameCI). No computer needed:
+#  1. Add the Unity license secrets once (docs/BUILD_APK.md, section "Unity litsenziyasi").
+#  2. Push to any branch (or run it manually: Actions -> Android APK -> Run workflow).
+#  3. Download the APK from the run's Artifacts, or from the "apk-latest" GitHub Release
+#     (direct .apk link that opens on a phone).
+#
+# Required secrets (Personal license):  UNITY_LICENSE (contents of Unity_lic.ulf), UNITY_EMAIL, UNITY_PASSWORD
+#   or for Plus/Pro:                    UNITY_SERIAL, UNITY_EMAIL, UNITY_PASSWORD
+# Optional release signing (Google Play):
+#   ANDROID_KEYSTORE_BASE64, ANDROID_KEYSTORE_PASS, ANDROID_KEYALIAS_NAME, ANDROID_KEYALIAS_PASS
+# Without signing secrets the APK is signed with Unity's debug key (installable on your own phone).
+name: Android APK
+
+on:
+  push:
+    paths:
+      - "UnityClient/**"
+      - ".github/workflows/android-apk.yml"
+  workflow_dispatch:
+    inputs:
+      exportType:
+        description: "apk = install on phone, aab = Google Play bundle"
+        type: choice
+        options: [apk, aab]
+        default: apk
+      development:
+        description: "Development build (profiler, debug log)"
+        type: boolean
+        default: false
+
+permissions:
+  contents: write   # publish the APK to the "apk-latest" release
+
+concurrency:
+  group: android-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  BUILD_NAME: OROL-Survival
+  RELEASE_TAG: apk-latest
+
+jobs:
+  android:
+    name: Build Android (${{ inputs.exportType || 'apk' }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 150
+    steps:
+      - name: Check Unity license secrets
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+          UNITY_SERIAL: ${{ secrets.UNITY_SERIAL }}
+          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+        run: |
+          missing=""
+          [ -z "$UNITY_EMAIL" ] && missing="$missing UNITY_EMAIL"
+          [ -z "$UNITY_PASSWORD" ] && missing="$missing UNITY_PASSWORD"
+          if [ -z "$UNITY_LICENSE" ] && [ -z "$UNITY_SERIAL" ]; then missing="$missing UNITY_LICENSE"; fi
+          if [ -n "$missing" ]; then
+            echo "::error title=Unity license is not configured::Missing repository secrets:$missing. Follow docs/BUILD_APK.md (Unity litsenziyasi). No APK can be built without them."
+            {
+              echo "## Unity license secrets are missing"
+              echo ""
+              echo "Missing:\`$missing\`"
+              echo ""
+              echo "Unity requires an activated license to build. Add the secrets in"
+              echo "**Settings > Secrets and variables > Actions** - step by step in \`docs/BUILD_APK.md\`."
+            } >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+          echo "Unity license secrets present."
+
+      - uses: actions/checkout@v4
+        with:
+          lfs: false
+
+      - name: Free disk space (Unity Android image is ~9 GB)
+        uses: jlumbroso/free-disk-space@v1.3.1
+        with:
+          tool-cache: false
+          android: true
+          dotnet: true
+          haskell: true
+          large-packages: false
+          docker-images: true
+          swap-storage: false
+
+      - name: Cache Unity Library
+        uses: actions/cache@v4
+        with:
+          path: UnityClient/Library
+          key: Library-Android-${{ hashFiles('UnityClient/Assets/**', 'UnityClient/Packages/**', 'UnityClient/ProjectSettings/**') }}
+          restore-keys: |
+            Library-Android-
+
+      - name: Build with Unity (GameCI)
+        id: build
+        uses: game-ci/unity-builder@v4
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+          UNITY_SERIAL: ${{ secrets.UNITY_SERIAL }}
+          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+        with:
+          projectPath: UnityClient
+          targetPlatform: Android
+          buildName: ${{ env.BUILD_NAME }}
+          buildMethod: Survival.Editor.BuildScript.BuildAndroid
+          versioning: Custom
+          version: 0.1.${{ github.run_number }}
+          androidVersionCode: ${{ github.run_number }}
+          androidExportType: ${{ inputs.exportType == 'aab' && 'androidAppBundle' || 'androidPackage' }}
+          androidKeystoreName: release.keystore
+          androidKeystoreBase64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          androidKeystorePass: ${{ secrets.ANDROID_KEYSTORE_PASS }}
+          androidKeyaliasName: ${{ secrets.ANDROID_KEYALIAS_NAME }}
+          androidKeyaliasPass: ${{ secrets.ANDROID_KEYALIAS_PASS }}
+          customParameters: -development ${{ inputs.development && 'true' || 'false' }}
+
+      - name: Collect build output
+        id: out
+        run: |
+          set -e
+          sudo chown -R "$(id -u)":"$(id -g)" build || true
+          ls -la build/Android || true
+          file=$(ls build/Android/*.apk build/Android/*.aab 2>/dev/null | head -1 || true)
+          if [ -z "$file" ]; then
+            echo "::error title=No build output::Unity finished but no .apk/.aab was found. Open the 'Build with Unity' step log and search for 'error' / '[Build]'."
+            exit 1
+          fi
+          name="${BUILD_NAME}-0.1.${GITHUB_RUN_NUMBER}.${file##*.}"
+          cp "$file" "build/$name"
+          (cd build && sha256sum "$name" > "$name.sha256")
+          echo "file=build/$name" >> "$GITHUB_OUTPUT"
+          echo "name=$name" >> "$GITHUB_OUTPUT"
+          echo "ext=${file##*.}" >> "$GITHUB_OUTPUT"
+          size=$(du -h "build/$name" | cut -f1)
+          {
+            echo "## Build succeeded"
+            echo ""
+            echo "| | |"
+            echo "|---|---|"
+            echo "| File | \`$name\` ($size) |"
+            echo "| Version | 0.1.${GITHUB_RUN_NUMBER} (code ${GITHUB_RUN_NUMBER}) |"
+            echo "| Commit | ${GITHUB_SHA::7} |"
+            echo "| SHA-256 | \`$(cut -d' ' -f1 build/$name.sha256)\` |"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.BUILD_NAME }}-${{ steps.out.outputs.ext }}-${{ github.run_number }}
+          path: |
+            ${{ steps.out.outputs.file }}
+            ${{ steps.out.outputs.file }}.sha256
+            build/Android/build-info.txt
+          retention-days: 30
+
+      - name: Publish to the apk-latest release (direct download on the phone)
+        if: steps.out.outputs.ext == 'apk'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -e
+          notes="OROL Survival ${{ steps.out.outputs.name }} - built by GitHub Actions from commit ${GITHUB_SHA::7} (${GITHUB_REF_NAME}).
+
+          Install: open the .apk below on your Android phone and allow installing from this source.
+          Debug-signed unless release signing secrets are configured. Phase 1 demo: see docs/ROADMAP.md.
+
+          SHA-256: $(cut -d' ' -f1 ${{ steps.out.outputs.file }}.sha256)"
+          if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
+            gh release delete-asset "$RELEASE_TAG" "OROL-Survival.apk" -y >/dev/null 2>&1 || true
+            gh release edit "$RELEASE_TAG" --notes "$notes" --prerelease --target "$GITHUB_SHA"
+          else
+            gh release create "$RELEASE_TAG" --title "OROL Survival - latest APK" --notes "$notes" --prerelease --target "$GITHUB_SHA"
+          fi
+          cp "${{ steps.out.outputs.file }}" OROL-Survival.apk
+          gh release upload "$RELEASE_TAG" OROL-Survival.apk "${{ steps.out.outputs.file }}.sha256" --clobber
+          echo "Download: https://github.com/${GITHUB_REPOSITORY}/releases/download/${RELEASE_TAG}/OROL-Survival.apk" >> "$GITHUB_STEP_SUMMARY"

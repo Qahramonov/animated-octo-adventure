@@ -45,10 +45,15 @@ namespace Survival.LoadTest
             double duration = double.Parse(Arg(args, "--duration", "30"), CultureInfo.InvariantCulture);
             double ramp = double.Parse(Arg(args, "--ramp", "20"), CultureInfo.InvariantCulture);
             int failBelowPercent = int.Parse(Arg(args, "--min-connected-percent", "95"), CultureInfo.InvariantCulture);
+            // e.g. --latency 40-140 --loss 3 : one-way delay range in ms and packet loss % per client
+            string[] lat = Arg(args, "--latency", "0-0").Split('-');
+            int latMin = int.Parse(lat[0], CultureInfo.InvariantCulture), latMax = int.Parse(lat[lat.Length - 1], CultureInfo.InvariantCulture);
+            int loss = int.Parse(Arg(args, "--loss", "0"), CultureInfo.InvariantCulture);
             Log.MinLevel = LogLevel.Warning;
             debug = Array.IndexOf(args, "--debug") >= 0;
 
-            Console.WriteLine($"Load test: {clients} clients -> {host}:{port} for {duration}s (ramp {ramp}/s)");
+            Console.WriteLine($"Load test: {clients} clients -> {host}:{port} for {duration}s (ramp {ramp}/s)" +
+                              (latMax > 0 || loss > 0 ? $" | emulated latency {latMin}-{latMax} ms, loss {loss}%" : ""));
             var bots = new List<Bot>(clients);
             WorldRuntime sharedWorld = null;
             var clock = Stopwatch.StartNew();
@@ -73,6 +78,7 @@ namespace Survival.LoadTest
                         Nickname = "LoadBot" + spawned,
                     };
                     b.Client = new GameClient(identity, GameInfo.Version);
+                    if (latMax > 0 || loss > 0) b.Client.SimulateNetwork(latMin, latMax, loss);
                     Bot captured = b;
                     b.Client.WelcomeReceived += w =>
                     {

@@ -1,0 +1,10 @@
+<!-- Keep our assemblies and the network library intact under IL2CPP managed code stripping. -->
+<linker>
+  <assembly fullname="LiteNetLib" preserve="all" />
+  <assembly fullname="Survival.Core" preserve="all" />
+  <assembly fullname="Survival.World" preserve="all" />
+  <assembly fullname="Survival.Gameplay" preserve="all" />
+  <assembly fullname="Survival.Networking" preserve="all" />
+  <assembly fullname="Survival.Server" preserve="all" />
+  <assembly fullname="Survival.Client" preserve="all" />
+</linker>
