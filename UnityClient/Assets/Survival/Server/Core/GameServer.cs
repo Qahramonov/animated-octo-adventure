@@ -161,7 +161,7 @@ namespace Survival.Server
             // Pre-generate terrain around the island centre so the first spawns are fast
             var sw = Stopwatch.StartNew();
             float c = (float)World.Generator.Center;
-            World.Heights.Prewarm(c, c, 1200f);
+            if (Config.PrewarmRadius > 0f) World.Heights.Prewarm(c, c, Config.PrewarmRadius);
             WorldFingerprintValue = WorldFingerprint.Compute(World);
             Log.Info("World", $"Terrain prewarm: {World.Heights.GeneratedChunkCount} chunks in {sw.ElapsedMilliseconds} ms | fingerprint {WorldFingerprintValue:x8}");
             UpdateStatus();

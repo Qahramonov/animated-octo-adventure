@@ -75,6 +75,7 @@ Ustuvorlik: standart < `server.json` < muhit o'zgaruvchilari `OROL_*` < buyruq q
 | `botFullSimRadius` | 400 | o'yinchidan uzoqdagi botlar yengil rejimda |
 | `distantBotTickDivider` / `maxBotThinksPerTick` | 6 / 12 | AI CPU budjeti |
 | `reconnectGraceSeconds` | 90 | uzilgan o'yinchi personaji saqlanadigan vaqt |
+| `prewarmRadius` | 1200 | ishga tushishda oldindan generatsiya qilinadigan terrain radiusi (m), 0 = faqat talab bo'yicha |
 | `dataDirectory` | data | profillar |
 | `statusHttpPort` | 8080 | 0 = o'chirilgan |
 | `adminToken` | (bo'sh) | bo'sh bo'lsa HTTP admin o'chiq |

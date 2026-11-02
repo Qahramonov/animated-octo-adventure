@@ -49,6 +49,7 @@ namespace Survival.Client.Game
         private float _fovKick;
         private bool _cursorLocked;
         private float _readyTimeout = 20f;
+        private bool _jumpLatch;
 
         private void Start()
         {
@@ -191,7 +192,11 @@ namespace Survival.Client.Game
             PlayerInput input = SampleInput(dt);
             if (_ready && _session.Phase == SessionPhase.Playing)
             {
-                _sim.Advance(dt, input);
+                // A tap must survive frames in which no 30 Hz simulation tick runs (e.g. at 60 FPS)
+                if ((input.Buttons & InputButtons.Jump) != 0) _jumpLatch = true;
+                if (_jumpLatch) input.Buttons |= InputButtons.Jump;
+                int ticks = _sim.Advance(dt, input);
+                if (ticks > 0) _jumpLatch = false;
                 _session.SendInputs(_sim.PendingSend);
             }
             _sim.UpdateRemotes();

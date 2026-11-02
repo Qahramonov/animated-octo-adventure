@@ -52,7 +52,7 @@ namespace Survival.Client.WorldView
         public int MaxUploadsPerFrame = 2;
         public float[] LodDistances = { 220f, 450f, 800f };
 
-        /// <summary>0..1: fraction of the LOD0 chunks around the viewer that are visible.</summary>
+        /// <summary>0..1: fraction of the chunks within 300 m that are built at their wanted LOD.</summary>
         public float NearReadyFraction { get; private set; }
         public int ActiveChunks => _chunks.Count;
 
@@ -152,7 +152,7 @@ namespace Survival.Client.WorldView
                     if (dist < 300f)
                     {
                         nearTotal++;
-                        if (v.Lod == 0) nearReady++;
+                        if (v.Lod == lod) nearReady++; // built at the LOD it should have (LOD0 only up to 220 m)
                     }
                     if (v.Lod != lod && !v.Building) _requests.Add((dist, v));
                 }

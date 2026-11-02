@@ -25,8 +25,20 @@ assembly'lari (GameCI image'idan). **Unity Editor bu muhitda ishga tushirilmagan
 | 80 bot, o'yinchisiz | tick o'rtacha 0.19 ms |
 | Docker konteyner (`docker build` + `docker run`) + 10 mijoz | image 287 MB, /health, /status ishlaydi, mijozlar ulandi |
 
+Kod ko'rib chiqishda topilib tuzatilgan client xatolari: 60 FPS da sakrash bosilishi tick'siz kadrda yo'qolishi mumkin edi (endi
+tick bajarilguncha saqlanadi); o'yinga kirish ekrani 220–300 m dagi LOD1 chunk'larni LOD0 deb kutib 20 s timeout'ga tushardi;
+telefondagi oflayn server ishga tushishda terrain'ni asosiy thread'da oldindan generatsiya qilardi (endi `prewarmRadius = 0`).
+
 Topilgan va tuzatilgan muammo: eski build'dagi load-test boshqa orol generatori bilan bashorat qilgani uchun ~1000 tuzatish
 berdi. Natijada **WorldFingerprint** qo'shildi (server Welcome'da yuboradi, client solishtiradi) va generator natijasi testda mahkamlandi.
+
+### GitHub Actions (haqiqiy CI)
+
+| Workflow | Natija |
+|---|---|
+| **Dedicated Server** (run #1) | ✅ build · 29/29 test · 100 mijozli load test PASS (tick o'rtacha 1.11 ms, max 1.46 ms) · Linux x64 (29 MB) va arm64 (27 MB) binarlar artifact |
+| **Android APK** (run #1) | ⛔ kutilganidek birinchi qadamda to'xtadi: *Missing repository secrets: UNITY_EMAIL UNITY_PASSWORD UNITY_LICENSE* |
+| **Unity Compile Check** (run #1) | ✅ GameCI image'dan Unity 6000.3.26f1 DLL'larini olib, 9 ta assembly'ni player + editor rejimida kompilyatsiya qildi (~5 daqiqa) |
 
 ### Unity C# kompilyatsiyasi (litsenziyasiz) — `tools/unity-compile-check`
 

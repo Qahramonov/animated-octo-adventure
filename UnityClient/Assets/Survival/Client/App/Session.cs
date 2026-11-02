@@ -105,6 +105,9 @@ namespace Survival.Client
                 DistantBotTickDivider = 8,
                 DataDirectory = System.IO.Path.Combine(Application.persistentDataPath, "localserver"),
                 ReconnectGraceSeconds = 30f,
+                // Do not block the UI thread generating terrain: chunks are generated lazily on demand
+                PrewarmRadius = 0f,
+                StatusHttpPort = 0,
             };
             var server = new GameServer(cfg, new FilePlayerStore(cfg.DataDirectory));
             _localServer = new ServerRunner(server);

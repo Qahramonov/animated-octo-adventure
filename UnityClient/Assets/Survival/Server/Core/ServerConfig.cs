@@ -54,6 +54,9 @@ namespace Survival.Server
         public float RespawnDelaySeconds = 6f;
         public float ReconnectGraceSeconds = 90f;
 
+        /// <summary>Terrain generated at startup around the island centre (0 = lazy only). Keep small on phones.</summary>
+        public float PrewarmRadius = 1200f;
+
         // ---- persistence / admin ----
         public string DataDirectory = "data";
         public float AutosaveSeconds = 60f;
