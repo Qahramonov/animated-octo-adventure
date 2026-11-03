@@ -25,6 +25,19 @@ echo "===== Unity / crash log (filtered, last 400 lines) ====="
 tail -n 400 "$OUT/logcat-unity.txt"
 echo "===== Errors ====="
 grep -nE "Exception|Error|FATAL|SIGSEGV|SIGABRT" "$OUT/logcat-unity.txt" | head -n 120 || true
+# Small inline previews (readable from the job log without downloading artifacts)
+python3 -m pip install --quiet pillow >/dev/null 2>&1 || true
+for f in "$OUT"/screen_10s.png "$OUT"/screen_45s.png "$OUT"/screen_90s.png "$OUT"/screen_after_tap.png; do
+  [ -s "$f" ] || continue
+  python3 - "$f" <<'PY' || true
+import base64, io, sys
+from PIL import Image
+im = Image.open(sys.argv[1]).convert("RGB")
+im.thumbnail((320, 320))
+buf = io.BytesIO(); im.save(buf, "JPEG", quality=60)
+print("PREVIEW %s %s" % (sys.argv[1].split("/")[-1], base64.b64encode(buf.getvalue()).decode()))
+PY
+done
 pid=$(adb shell pidof "$PKG" | tr -d '\r')
 if [ -z "$pid" ]; then echo "::error::Game process is not running at the end (crashed or exited)"; fi
 exit 0

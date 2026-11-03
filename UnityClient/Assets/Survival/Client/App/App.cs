@@ -77,10 +77,24 @@ namespace Survival.Client
             }
         }
 
+        private static int _wiredSceneHandle;
+
         private static void OnSceneLoaded(Scene scene, LoadSceneMode mode)
         {
             if (mode != LoadSceneMode.Single) return;
-            Debug.Log("[App] Scene loaded: " + scene.name);
+            WireScene(scene, "sceneLoaded");
+        }
+
+        /// <summary>
+        /// Creates the controller for a scene exactly once. Called from sceneLoaded and, as a fallback, from
+        /// Update: on device the first scene's sceneLoaded event was observed not to reach a handler
+        /// registered in BeforeSceneLoad, which left the game on a black screen after the Unity splash.
+        /// </summary>
+        private static void WireScene(Scene scene, string source)
+        {
+            if (!scene.IsValid() || !scene.isLoaded || scene.handle == _wiredSceneHandle) return;
+            _wiredSceneHandle = scene.handle;
+            Debug.Log($"[App] Scene loaded: {scene.name} (via {source})");
             var root = new GameObject("[" + scene.name + "Controller]");
             switch (scene.name)
             {
@@ -102,6 +116,7 @@ namespace Survival.Client
 
         private void Update()
         {
+            WireScene(SceneManager.GetActiveScene(), "update");
             Session?.Update(Time.unscaledDeltaTime);
             Servers?.Update();
         }
