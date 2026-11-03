@@ -93,6 +93,8 @@ Shader "OROL/VertexLit"
             #pragma multi_compile_fragment _ _SHADOWS_SOFT _SHADOWS_SOFT_LOW _SHADOWS_SOFT_MEDIUM _SHADOWS_SOFT_HIGH
             #pragma multi_compile_fog
             #pragma multi_compile_instancing
+            // GLES: per-instance light probe/LOD arrays exceed GL_MAX_FRAGMENT_UNIFORM_VECTORS (seen on the emulator) -> shader fails to link
+            #pragma instancing_options nolightprobe nolodfade
 
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
 
@@ -134,7 +136,7 @@ Shader "OROL/VertexLit"
 
             half4 Frag(Varyings i) : SV_Target
             {
-                UNITY_SETUP_INSTANCE_ID(i);
+                // no per-instance data is read in the fragment stage (keeps GLES uniform count low)
                 if (_ClipInnerRadius > 0.0)
                 {
                     float2 d = i.positionWS.xz - _WorldSpaceCameraPos.xz;

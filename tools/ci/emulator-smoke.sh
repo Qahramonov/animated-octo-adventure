@@ -30,6 +30,7 @@ grep -E "Unity|AndroidRuntime|DEBUG|libc|CRASH|IL2CPP|\[App\]|\[Boot\]" "$OUT/lo
 adb shell cat /sdcard/Android/data/$PKG/files/orol-log.txt > "$OUT/orol-log.txt" 2>/dev/null || true
 echo "===== Unity / crash log (filtered, last 400 lines) ====="
 tail -n 400 "$OUT/logcat-unity.txt"
+echo "Shader link errors: $(grep -c "GLSL link error" "$OUT/logcat-unity.txt")"
 echo "===== Errors ====="
 grep -nE "Exception|Error|FATAL|SIGSEGV|SIGABRT" "$OUT/logcat-unity.txt" | head -n 120 || true
 # Small inline previews (readable from the job log without downloading artifacts)
