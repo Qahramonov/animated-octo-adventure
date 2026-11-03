@@ -26,7 +26,7 @@ Shader "OROL/Additive"
             #pragma fragment Frag
             #pragma multi_compile_instancing
             // GLES: the default instance array size exceeded GL_MAX_VERTEX_UNIFORM_VECTORS (256) on the emulator
-            #pragma instancing_options nolightprobe nolodfade maxcount:50
+            #pragma instancing_options assumeuniformscaling nolightprobe nolodfade maxcount:32
 
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
 

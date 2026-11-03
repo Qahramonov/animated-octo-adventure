@@ -93,9 +93,10 @@ Shader "OROL/VertexLit"
             #pragma multi_compile_fragment _ _SHADOWS_SOFT _SHADOWS_SOFT_LOW _SHADOWS_SOFT_MEDIUM _SHADOWS_SOFT_HIGH
             #pragma multi_compile_fog
             #pragma multi_compile_instancing
-            // GLES: per-instance light probe/LOD arrays exceed GL_MAX_FRAGMENT_UNIFORM_VECTORS (seen on the emulator) -> shader fails to link
-            #pragma instancing_options nolightprobe nolodfade
-
+            // GLES without uniform buffers: per-instance arrays must fit 256 vectors (vertex) / 261 (fragment),
+            // otherwise the shader fails to link (seen on the emulator). Uniform scale only (vegetation is uniform).
+            #pragma instancing_options assumeuniformscaling nolightprobe nolodfade maxcount:40
+            
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
 
             struct Attributes
@@ -195,6 +196,9 @@ Shader "OROL/VertexLit"
             #pragma vertex ShadowVert
             #pragma fragment ShadowFrag
             #pragma multi_compile_instancing
+            // GLES without uniform buffers: per-instance arrays must fit 256 vectors (vertex) / 261 (fragment),
+            // otherwise the shader fails to link (seen on the emulator). Uniform scale only (vegetation is uniform).
+            #pragma instancing_options assumeuniformscaling nolightprobe nolodfade maxcount:40
 
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
 
@@ -250,6 +254,9 @@ Shader "OROL/VertexLit"
             #pragma vertex DepthVert
             #pragma fragment DepthFrag
             #pragma multi_compile_instancing
+            // GLES without uniform buffers: per-instance arrays must fit 256 vectors (vertex) / 261 (fragment),
+            // otherwise the shader fails to link (seen on the emulator). Uniform scale only (vegetation is uniform).
+            #pragma instancing_options assumeuniformscaling nolightprobe nolodfade maxcount:40
 
             struct Attributes
             {
