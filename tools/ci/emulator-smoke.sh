@@ -41,8 +41,8 @@ for f in "$OUT"/screen_10s.png "$OUT"/screen_45s.png "$OUT"/screen_90s.png "$OUT
 import base64, io, sys
 from PIL import Image
 im = Image.open(sys.argv[1]).convert("RGB")
-im.thumbnail((320, 320))
-buf = io.BytesIO(); im.save(buf, "JPEG", quality=60)
+im.thumbnail((960, 960))
+buf = io.BytesIO(); im.save(buf, "JPEG", quality=70)
 print("PREVIEW %s %s" % (sys.argv[1].split("/")[-1], base64.b64encode(buf.getvalue()).decode()))
 PY
 done
