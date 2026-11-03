@@ -8,7 +8,14 @@ adb wait-for-device
 adb shell getprop ro.product.cpu.abilist
 adb logcat -c || true
 adb install -r -g "$APK" || { echo "::error::adb install failed"; exit 1; }
-adb shell monkey -p "$PKG" -c android.intent.category.LAUNCHER 1
+# -force-gles: the emulator's Vulkan (gfxstream/swiftshader) is unreliable; phones use Vulkan or GLES normally.
+for attempt in 1 2 3; do
+  adb shell am start -W -n "$PKG/com.unity3d.player.UnityPlayerActivity" -e unity "-force-gles" || true
+  sleep 12
+  if [ -n "$(adb shell pidof "$PKG" | tr -d '\r')" ]; then echo "launch attempt $attempt: running"; break; fi
+  echo "launch attempt $attempt: process died, retrying"
+  adb logcat -d -v time > "$OUT/logcat-attempt$attempt.txt" || true
+done
 for t in 5 10 20 30 45 60 90; do
   prev=${last:-0}; sleep $((t - prev)); last=$t
   adb exec-out screencap -p > "$OUT/screen_${t}s.png" || true

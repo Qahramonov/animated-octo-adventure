@@ -212,7 +212,7 @@ jobs:
           arch: x86_64
           target: google_apis
           force-avd-creation: true
-          emulator-options: -no-window -no-audio -no-boot-anim -gpu swiftshader_indirect -feature -Vulkan -camera-back none -skin 1920x1080
+          emulator-options: -no-window -no-audio -no-boot-anim -gpu swiftshader_indirect -camera-back none -skin 1920x1080
           disable-animations: true
           script: bash tools/ci/emulator-smoke.sh apk/${{ needs.android.outputs.file }} smoke
       - name: Upload smoke-test results
