@@ -38,13 +38,22 @@ Agar secrets yo'q bo'lsa, workflow birinchi qadamda aniq xabar bilan to'xtaydi: 
 - O'rnatish: faylni oching → "Noma'lum manbalardan o'rnatishga ruxsat" → O'rnatish.
 - Paket nomi: `com.qahramonov.orol`, arxitektura: ARM64, minimal Android 8.0 (API 26), landscape.
 
-## 4. Google Play uchun (AAB + release signing)
+## 4. Doimiy imzo kaliti (yangi versiya eskisining ustiga o'rnatilishi uchun)
 
-1. Keystore yarating (bir marta, masalan Termux'da `pkg install openjdk-17` → `keytool -genkeypair -v -keystore orol.keystore -alias orol -keyalg RSA -keysize 4096 -validity 10000`).
-2. Secrets: `ANDROID_KEYSTORE_BASE64` (`base64 -w0 orol.keystore`), `ANDROID_KEYSTORE_PASS`, `ANDROID_KEYALIAS_NAME`, `ANDROID_KEYALIAS_PASS`.
-3. **Run workflow → aab**. Keystore'ni xavfsiz joyda saqlang — yo'qotilsa ilovani yangilab bo'lmaydi.
+Har bir build vaqtinchalik debug kalit bilan imzolansa, Android yangi versiyani eskisining ustiga o'rnatmaydi
+(avval o'chirish kerak bo'ladi). Doimiy kalit uchun **bitta secret** yetarli:
 
-Secrets bo'lmasa APK Unity debug kaliti bilan imzolanadi (o'z telefoningizga o'rnatish uchun yetarli, Play Store uchun emas).
+| Secret | Qiymat |
+|---|---|
+| `ANDROID_KEYSTORE_PASS` | O'zingiz o'ylab topgan parol, **kamida 16 belgi** (harf + raqam). Uni xavfsiz joyda saqlang. |
+
+Birinchi build kalitni o'zi yaratadi va repozitoriyga faqat shu parol bilan **shifrlangan** holda yozadi
+(`signing/orol-release.p12.enc`, AES-256, PBKDF2 600 000 iteratsiya). Keyingi barcha buildlar shu kalitdan foydalanadi.
+APK v1 + v2 + v3 sxemalarida imzolanadi (fayl menejerlari "imzo xatosi" ko'rsatmaydi).
+
+- Parolni yo'qotsangiz yoki o'zgartirsangiz — kalitni ochib bo'lmaydi: `signing/orol-release.p12.enc` ni o'chiring,
+  yangi kalit yaratiladi va telefonda ilovani bir marta qayta o'rnatish kerak bo'ladi.
+- Google Play uchun keyinchalik AAB + Play App Signing (alohida upload kaliti) ishlatiladi.
 
 ## 5. Litsenziyasiz tez tekshiruv
 
@@ -63,6 +72,6 @@ U shader va IL2CPP'ni tekshirmaydi; buni faqat haqiqiy Unity build qiladi.
 | Shader xatosi (`Shader error OROL/...`) | Log'da qator raqami bor. O'yin baribir URP fallback materiallariga o'tadi, lekin xatoni tuzatish kerak. |
 | `Build failed` | *Build with Unity* qadamida `error CS` (C# xatosi) yoki `[Build]` qatorlarini qidiring. |
 | Gradle/SDK xatolari | Unity versiyasi `ProjectSettings/ProjectVersion.txt` da. Boshqa versiyaga o'tishda GameCI'da `ubuntu-<versiya>-android-3` image mavjudligini tekshiring. |
-| APK o'rnatilmaydi ("App not installed") | Eski build boshqa kalit bilan imzolangan bo'lsa, eskisini o'chirib qayta o'rnating. |
+| APK o'rnatilmaydi ("App not installed") yoki o'rnatish osilib qoladi | Eski versiya boshqa kalit bilan imzolangan: eskisini o'chirib qayta o'rnating. Doimiy kalit uchun 4-bo'lim. |
 
 Unity versiyasini yangilash: `UnityClient/ProjectSettings/ProjectVersion.txt` va `Packages/manifest.json` dagi paket versiyalari.
