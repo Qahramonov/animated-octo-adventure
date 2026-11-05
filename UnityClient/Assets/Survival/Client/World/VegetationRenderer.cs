@@ -65,8 +65,8 @@ namespace Survival.Client.WorldView
             v._world = world;
             v._viewer = viewer;
             v._camera = cam;
-            v._foliage = App.Materials.Lit("foliage", Color.white, 0f, 0f, 0f, 0.6f);
-            v._rock = App.Materials.Lit("rock", Color.white, 0.05f, 0.1f);
+            v._foliage = App.Materials.Instanced(App.Materials.Lit("foliage", Color.white, 0f, 0f, 0f, 0.6f));
+            v._rock = App.Materials.Instanced(App.Materials.Lit("rock", Color.white, 0.05f, 0.1f));
             v.ApplyQuality();
             QualityManager.Changed += v.ApplyQuality;
             return v;

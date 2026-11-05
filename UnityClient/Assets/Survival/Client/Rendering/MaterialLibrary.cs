@@ -66,7 +66,7 @@ namespace Survival.Client.Rendering
             if (_cache.TryGetValue(key, out Material m) && m != null) return m;
             if (_lit != null)
             {
-                m = new Material(_lit) { name = key, enableInstancing = true };
+                m = new Material(_lit) { name = key, enableInstancing = false }; // SRP Batcher batches these; see Instanced()
                 m.SetColor(ColorId, tint);
                 m.SetFloat(GlossId, gloss);
                 m.SetFloat(SmoothId, smoothness);
@@ -81,9 +81,23 @@ namespace Survival.Client.Rendering
             {
                 m = _fallbackLit != null ? new Material(_fallbackLit) : new Material(Shader.Find("Universal Render Pipeline/Particles/Simple Lit"));
                 m.name = key + "_fallback";
-                m.enableInstancing = true;
                 m.SetColor(BaseColorId, tint);
             }
+            _cache[key] = m;
+            return m;
+        }
+
+        /// <summary>
+        /// Instancing-enabled copy of a material, only for Graphics.RenderMeshInstanced (vegetation).
+        /// Regular renderers use the non-instanced original: on GLES the instanced variants hit uniform
+        /// limits / driver issues (the emulator rendered instanced lobby props as broken red geometry).
+        /// </summary>
+        public Material Instanced(Material source)
+        {
+            if (source == null) return null;
+            string key = source.name + "#instanced";
+            if (_cache.TryGetValue(key, out Material m) && m != null) return m;
+            m = new Material(source) { name = key, enableInstancing = true };
             _cache[key] = m;
             return m;
         }
@@ -117,7 +131,7 @@ namespace Survival.Client.Rendering
             if (_cache.TryGetValue(key, out Material m) && m != null) return m;
             if (_additive != null)
             {
-                m = new Material(_additive) { name = key, enableInstancing = true };
+                m = new Material(_additive) { name = key };
                 m.SetTexture(MainTexId, tex);
                 m.SetColor(ColorId, tint);
                 m.SetFloat(IntensityId, intensity);
