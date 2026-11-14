@@ -203,7 +203,7 @@ namespace Survival.Client.Game
 
         private void BuildPanel(Transform canvas)
         {
-            Image dim = UIFactory.Image(canvas, "InventoryPanel", new Color(0, 0, 0, 0.62f));
+            Image dim = UIFactory.Image(canvas, "InventoryPanel", new Color(0.02f, 0.025f, 0.035f, 0.93f));
             UIFactory.Stretch(dim.rectTransform);
             dim.raycastTarget = true;
             var safe = UIFactory.Rect(dim.transform, "Safe");

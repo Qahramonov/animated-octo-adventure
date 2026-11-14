@@ -38,7 +38,7 @@ adb shell input swipe $((W*91/100)) $((H*54/100)) $((W*91/100)) $((H*54/100)) 30
 sleep 1.5; adb exec-out screencap -p > "$OUT/island_2_swing.png" || true; wait
 adb shell input tap $((W*88/100)) $((H*7/100)); sleep 2
 adb exec-out screencap -p > "$OUT/island_3_bag.png" || true
-adb shell input tap $((W*88/100)) $((H*7/100)); sleep 1
+adb shell input tap $((W*955/1000)) $((H*65/1000)); sleep 1   # close with the X button
 # walk forward for 6 s (joystick up), then look again
 adb shell input swipe $((W*14/100)) $((H*76/100)) $((W*14/100)) $((H*56/100)) 6000; sleep 1
 adb exec-out screencap -p > "$OUT/island_4_walk.png" || true

@@ -517,7 +517,7 @@ namespace Survival.Client.Game
             float strike = t < 0.4f ? Mathf.SmoothStep(0f, 1f, t / 0.4f) : 1f - Mathf.SmoothStep(0f, 1f, (t - 0.4f) / 0.6f);
             float speed = new Vector2(st.Velocity.X, st.Velocity.Z).magnitude;
             float sway = Mathf.Sin(_bob * Mathf.PI) * Mathf.Clamp01(speed / 6f) * 0.012f;
-            _toolPivot.localPosition = new Vector3(0.30f - strike * 0.10f, -0.30f + sway + strike * 0.06f, 0.42f + strike * 0.16f);
+            _toolPivot.localPosition = new Vector3(0.34f - strike * 0.12f, -0.34f + sway + strike * 0.08f, 0.62f + strike * 0.18f);
             _toolPivot.localRotation = Quaternion.Euler(-38f + strike * 78f, -12f - strike * 14f, 8f);
         }
 
