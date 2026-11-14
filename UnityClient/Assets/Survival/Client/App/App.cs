@@ -78,6 +78,35 @@ namespace Survival.Client
         }
 
         private static int _wiredSceneHandle;
+        private static bool _autoStartDone;
+
+        private static System.Collections.IEnumerator AutoStartOffline()
+        {
+            yield return new WaitForSecondsRealtime(3f);
+            Debug.Log("[App] Auto-start: offline practice");
+            Session?.StartLocal(false);
+        }
+
+        /// <summary>String extra of the Android launch intent (empty elsewhere). Used by the CI smoke test.</summary>
+        public static string LaunchExtra(string key)
+        {
+#if UNITY_ANDROID && !UNITY_EDITOR
+            try
+            {
+                using (var player = new AndroidJavaClass("com.unity3d.player.UnityPlayer"))
+                using (var activity = player.GetStatic<AndroidJavaObject>("currentActivity"))
+                using (var intent = activity.Call<AndroidJavaObject>("getIntent"))
+                {
+                    return intent.Call<string>("getStringExtra", key) ?? string.Empty;
+                }
+            }
+            catch (System.Exception e)
+            {
+                Debug.LogWarning("[App] LaunchExtra failed: " + e.Message);
+            }
+#endif
+            return string.Empty;
+        }
 
         private static void OnSceneLoaded(Scene scene, LoadSceneMode mode)
         {
@@ -103,6 +132,12 @@ namespace Survival.Client
                     break;
                 case SceneLobby:
                     root.AddComponent<Lobby.LobbyController>();
+                    if (!_autoStartDone && LaunchExtra("orol_auto") == "offline")
+                    {
+                        // Automated smoke test: "am start ... -e orol_auto offline" goes straight to offline practice
+                        _autoStartDone = true;
+                        Instance.StartCoroutine(AutoStartOffline());
+                    }
                     break;
                 case SceneGame:
                     root.AddComponent<Game.GameController>();

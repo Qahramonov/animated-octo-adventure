@@ -28,6 +28,7 @@ namespace Survival.Client.Rendering
                 case NodeKind.StoneNode: Rock(lod, MeshBuilder.Rgb(0.55f, 0.54f, 0.52f), MeshBuilder.Rgb(0.7f, 0.7f, 0.68f), 1); break;
                 case NodeKind.MetalNode: Rock(lod, MeshBuilder.Rgb(0.42f, 0.38f, 0.36f), MeshBuilder.Rgb(0.72f, 0.45f, 0.30f), 2); break;
                 case NodeKind.SulfurNode: Rock(lod, MeshBuilder.Rgb(0.5f, 0.48f, 0.42f), MeshBuilder.Rgb(0.95f, 0.85f, 0.22f), 3); break;
+                case (NodeKind)200: Stump(); break;
                 default: B.Box(Vector3.up * 0.5f, Vector3.one, MeshBuilder.Rgb(1, 0, 1)); break;
             }
             m = B.ToMesh(key);
@@ -110,13 +111,86 @@ namespace Survival.Client.Rendering
             if (variant > 0 && lod == 0)
             {
                 // Mineral veins / crystals so resource nodes read differently from plain boulders
-                for (int i = 0; i < 5; i++)
+                B.Blob(new Vector3(0.45f, 0.3f, -0.35f), new Vector3(0.6f, 0.45f, 0.55f), MeshBuilder.Shade(stone, 0.9f), 0, 0.25f, 31 + variant, 0.12f);
+                for (int i = 0; i < 9; i++)
                 {
-                    float a = i * 1.3f + variant;
-                    Vector3 p = new Vector3(Mathf.Cos(a) * 0.62f, 0.55f + (i % 2) * 0.25f, Mathf.Sin(a) * 0.55f);
-                    B.Blob(p, new Vector3(0.24f, 0.18f, 0.24f), vein, 0, 0.3f, 40 + i + variant * 7, 0.2f);
+                    float a = i * 0.72f + variant;
+                    float up = 0.35f + (i % 3) * 0.24f;
+                    float ring = 0.78f - (i % 3) * 0.14f;
+                    Vector3 p = new Vector3(Mathf.Cos(a) * ring, up, Mathf.Sin(a) * ring * 0.9f);
+                    float size = 0.2f + (i % 2) * 0.08f;
+                    B.Blob(p, new Vector3(size, size * 0.8f, size), i % 4 == 0 ? MeshBuilder.Shade(vein, 1.15f) : vein, 0, 0.3f, 40 + i + variant * 7, 0.2f);
                 }
             }
+        }
+
+        private static void Stump()
+        {
+            Color32 bark = MeshBuilder.Rgb(0.33f, 0.24f, 0.16f);
+            Color32 cut = MeshBuilder.Rgb(0.78f, 0.64f, 0.42f);
+            B.Cylinder(Vector3.zero, 0.55f, 0.4f, 0.32f, 7, bark, true, false, cut);
+        }
+
+        /// <summary>Hand-held tool / item model, grip at the origin, pointing along +Z (forward).</summary>
+        public static Mesh Tool(Survival.Gameplay.ItemId id)
+        {
+            string key = "tool_" + id;
+            if (Cache.TryGetValue(key, out Mesh m)) return m;
+            B.Clear();
+            Color32 wood = MeshBuilder.Rgb(0.45f, 0.31f, 0.18f);
+            Color32 stone = MeshBuilder.Rgb(0.56f, 0.56f, 0.55f);
+            Color32 stoneDark = MeshBuilder.Rgb(0.40f, 0.40f, 0.41f);
+            Color32 cord = MeshBuilder.Rgb(0.72f, 0.63f, 0.42f);
+            switch (id)
+            {
+                case Survival.Gameplay.ItemId.StoneHatchet:
+                    Handle(0.62f, wood);
+                    B.Box(new Vector3(0, 0.07f, 0.50f), new Vector3(0.05f, 0.24f, 0.13f), stone);
+                    B.Box(new Vector3(0, 0.19f, 0.50f), new Vector3(0.035f, 0.10f, 0.19f), stoneDark, 0.4f);
+                    B.Box(new Vector3(0, 0.0f, 0.50f), new Vector3(0.07f, 0.07f, 0.09f), cord);
+                    break;
+                case Survival.Gameplay.ItemId.StonePickaxe:
+                    Handle(0.66f, wood);
+                    B.Box(new Vector3(0, 0.0f, 0.56f), new Vector3(0.06f, 0.50f, 0.08f), stone);
+                    B.Box(new Vector3(0, 0.27f, 0.56f), new Vector3(0.04f, 0.10f, 0.05f), stoneDark, 0.2f);
+                    B.Box(new Vector3(0, -0.27f, 0.56f), new Vector3(0.04f, 0.10f, 0.05f), stoneDark);
+                    B.Box(new Vector3(0, 0.0f, 0.56f), new Vector3(0.08f, 0.09f, 0.10f), cord);
+                    break;
+                case Survival.Gameplay.ItemId.Spear:
+                    B.Transform = Matrix4x4.TRS(new Vector3(0, 0, -0.45f), Quaternion.Euler(90, 0, 0), Vector3.one);
+                    B.Cylinder(Vector3.zero, 1.5f, 0.022f, 0.018f, 5, wood, true);
+                    B.Cylinder(new Vector3(0, 1.5f, 0), 0.26f, 0.045f, 0f, 4, stone, false);
+                    B.Transform = Matrix4x4.identity;
+                    break;
+                case Survival.Gameplay.ItemId.Bandage:
+                    B.Box(new Vector3(0, 0, 0.1f), new Vector3(0.12f, 0.08f, 0.16f), MeshBuilder.Rgb(0.9f, 0.88f, 0.82f));
+                    B.Box(new Vector3(0, 0.045f, 0.1f), new Vector3(0.04f, 0.01f, 0.12f), MeshBuilder.Rgb(0.8f, 0.2f, 0.18f));
+                    break;
+                case Survival.Gameplay.ItemId.Berries:
+                    B.Blob(new Vector3(0.03f, 0, 0.1f), Vector3.one * 0.05f, MeshBuilder.Rgb(0.75f, 0.12f, 0.2f));
+                    B.Blob(new Vector3(-0.04f, 0.01f, 0.13f), Vector3.one * 0.045f, MeshBuilder.Rgb(0.62f, 0.1f, 0.3f));
+                    B.Blob(new Vector3(0, 0.05f, 0.08f), Vector3.one * 0.04f, MeshBuilder.Rgb(0.8f, 0.2f, 0.25f));
+                    break;
+                case Survival.Gameplay.ItemId.Wood:
+                    B.Transform = Matrix4x4.TRS(Vector3.zero, Quaternion.Euler(90, 0, 0), Vector3.one);
+                    B.Cylinder(Vector3.zero, 0.4f, 0.06f, 0.06f, 6, MeshBuilder.Rgb(0.36f, 0.25f, 0.15f), true, true, MeshBuilder.Rgb(0.78f, 0.64f, 0.42f));
+                    B.Transform = Matrix4x4.identity;
+                    break;
+                default: // rock and any other resource: a fist-sized stone
+                    B.Blob(new Vector3(0, 0, 0.1f), new Vector3(0.1f, 0.075f, 0.12f), id == Survival.Gameplay.ItemId.SulfurOre ? MeshBuilder.Rgb(0.85f, 0.76f, 0.2f)
+                        : id == Survival.Gameplay.ItemId.MetalOre ? MeshBuilder.Rgb(0.62f, 0.42f, 0.32f) : stone, 0, 0.25f, 3, 0.1f);
+                    break;
+            }
+            m = B.ToMesh(key);
+            Cache[key] = m;
+            return m;
+        }
+
+        private static void Handle(float length, Color32 wood)
+        {
+            B.Transform = Matrix4x4.TRS(new Vector3(0, 0, -0.08f), Quaternion.Euler(90, 0, 0), Vector3.one);
+            B.Cylinder(Vector3.zero, length, 0.024f, 0.02f, 5, wood, true, true);
+            B.Transform = Matrix4x4.identity;
         }
 
         /// <summary>Faceted grass tuft (for close vegetation, Medium/High quality).</summary>

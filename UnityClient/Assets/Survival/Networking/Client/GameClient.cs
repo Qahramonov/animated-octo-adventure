@@ -111,6 +111,15 @@ namespace Survival.Networking
         public event Action<TeleportMsg> Teleported;
         public event Action<DiedMsg> Died;
         public event Action<ChatMsg> ChatReceived;
+        /// <summary>The local inventory was replaced by the server's copy.</summary>
+        public event Action InventoryReceived;
+        public event Action<HitResultMsg> HitResultReceived;
+        /// <summary>(reset, depleted, ids): world nodes that were depleted or came back.</summary>
+        public event Action<bool, bool, List<uint>> NodeStateReceived;
+
+        /// <summary>Server-authoritative inventory of the local player.</summary>
+        public Inventory Inventory { get; } = new Inventory();
+        private readonly List<uint> _nodeScratch = new List<uint>(64);
         /// <summary>Connection attempt failed or reconnect gave up. Argument is a human readable reason.</summary>
         public event Action<string> Failed;
         /// <summary>The connection dropped while playing; automatic reconnect is starting.</summary>
@@ -244,6 +253,46 @@ namespace Survival.Networking
             _peer.Send(_writer, NetProtocol.ChannelReliable, DeliveryMethod.ReliableOrdered);
         }
 
+        private void SendReliable()
+        {
+            if (_peer != null && State == ClientState.InGame) _peer.Send(_writer, NetProtocol.ChannelReliable, DeliveryMethod.ReliableOrdered);
+        }
+
+        public void SendHit(uint nodeId)
+        {
+            _writer.Reset();
+            new HitMsg { NodeId = nodeId }.Write(_writer);
+            SendReliable();
+        }
+
+        public void SendCraft(byte recipeId)
+        {
+            _writer.Reset();
+            ActionMsg.WriteCraft(_writer, recipeId);
+            SendReliable();
+        }
+
+        public void SendUseItem(int slot)
+        {
+            _writer.Reset();
+            ActionMsg.WriteUse(_writer, (byte)slot);
+            SendReliable();
+        }
+
+        public void SendMoveItem(int from, int to)
+        {
+            _writer.Reset();
+            ActionMsg.WriteMove(_writer, (byte)from, (byte)to);
+            SendReliable();
+        }
+
+        public void SendDrink()
+        {
+            _writer.Reset();
+            ActionMsg.WriteDrink(_writer);
+            SendReliable();
+        }
+
         public void SendChat(string text)
         {
             if (_peer == null || string.IsNullOrWhiteSpace(text)) return;
@@ -348,6 +397,17 @@ namespace Survival.Networking
                         break;
                     case MsgId.Chat:
                         ChatReceived?.Invoke(ChatMsg.Read(reader));
+                        break;
+                    case MsgId.Inventory:
+                        InventoryMsg.Read(reader, Inventory);
+                        InventoryReceived?.Invoke();
+                        break;
+                    case MsgId.HitResult:
+                        HitResultReceived?.Invoke(HitResultMsg.Read(reader));
+                        break;
+                    case MsgId.NodeState:
+                        NodeStateMsg.Read(reader, out bool reset, out bool depleted, _nodeScratch);
+                        NodeStateReceived?.Invoke(reset, depleted, _nodeScratch);
                         break;
                     default:
                         Log.Warn("Net", "Unknown message " + id);

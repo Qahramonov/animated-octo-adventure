@@ -52,6 +52,8 @@ namespace Survival.Server
 
         // ---- gameplay ----
         public float RespawnDelaySeconds = 6f;
+        /// <summary>Seconds until a felled tree / mined node / picked bush comes back.</summary>
+        public float NodeRespawnSeconds = 420f;
         public float ReconnectGraceSeconds = 90f;
 
         /// <summary>Terrain generated at startup around the island centre (0 = lazy only). Keep small on phones.</summary>

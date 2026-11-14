@@ -12,7 +12,7 @@ namespace Survival.Server.Persistence
     /// <summary>Everything the server keeps about a player between sessions.</summary>
     public sealed class PlayerRecord
     {
-        public const int FormatVersion = 1;
+        public const int FormatVersion = 2;
 
         public string PlayerId;
         public string SecretHash;
@@ -28,7 +28,7 @@ namespace Survival.Server.Persistence
         public int Deaths;
         public int Kills;
 
-        // Phase 2: inventory slots are appended to this record (format version 2).
+        public Inventory Items = Inventory.Starter();
 
         public void Write(BinaryWriter w)
         {
@@ -51,6 +51,11 @@ namespace Survival.Server.Persistence
             w.Write(PlayTimeSeconds);
             w.Write(Deaths);
             w.Write(Kills);
+            for (int i = 0; i < Inventory.Size; i++)
+            {
+                w.Write((byte)Items.Slots[i].Id);
+                w.Write(Items.Slots[i].Count);
+            }
         }
 
         public static PlayerRecord Read(BinaryReader r)
@@ -79,6 +84,15 @@ namespace Survival.Server.Persistence
             p.PlayTimeSeconds = r.ReadDouble();
             p.Deaths = r.ReadInt32();
             p.Kills = r.ReadInt32();
+            if (version >= 2)
+            {
+                for (int i = 0; i < Inventory.Size; i++)
+                {
+                    var id = (ItemId)r.ReadByte();
+                    ushort count = r.ReadUInt16();
+                    p.Items.Slots[i] = id == ItemId.None || count == 0 || ItemDb.Get(id) == null ? default : new ItemStack { Id = id, Count = count };
+                }
+            }
             return p;
         }
     }

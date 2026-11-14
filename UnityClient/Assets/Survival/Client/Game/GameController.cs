@@ -51,6 +51,20 @@ namespace Survival.Client.Game
         private float _readyTimeout = 20f;
         private bool _jumpLatch;
 
+        // ---- gathering ----
+        private SurvivalUi _ui;
+        private Transform _toolPivot;
+        private MeshFilter _toolMesh;
+        private ItemId _toolShown = (ItemId)255;
+        private float _swing = 1f;          // 0..1 swing animation progress (1 = idle)
+        private float _swingCooldown;
+        private uint _pendingHit;
+        private float _pendingHitDelay;
+        private bool _hasTarget;
+        private Survival.World.WorldNode _target;
+        private readonly System.Collections.Generic.Dictionary<uint, byte> _nodeHealth = new System.Collections.Generic.Dictionary<uint, byte>();
+        private readonly System.Collections.Generic.List<Survival.World.WorldNode> _nodeScratch = new System.Collections.Generic.List<Survival.World.WorldNode>(32);
+
         private void Start()
         {
             _session = App.Session;
@@ -92,6 +106,17 @@ namespace Survival.Client.Game
                 _localBody.gameObject.SetActive(_mode == CameraMode.ThirdPerson);
                 _hud.SetPaused(false);
             };
+
+            _ui = SurvivalUi.Create(_hud.Safe, _hud.CanvasRoot, _session);
+            _ui.DrinkRequested = () =>
+            {
+                _session.SendDrink();
+                App.Audio.Play(SfxSound.Splash, 0.35f, 1.4f);
+            };
+            BuildToolView();
+            _session.HitResult += OnHitResult;
+            _session.NodesChanged += OnNodesChanged;
+            OnNodesChanged();
 
             _session.Notice += OnNotice;
             _session.Died += OnDied;
@@ -140,6 +165,8 @@ namespace Survival.Client.Game
             if (_session != null)
             {
                 _session.Notice -= OnNotice;
+                _session.HitResult -= OnHitResult;
+                _session.NodesChanged -= OnNodesChanged;
                 _session.Died -= OnDied;
                 _session.Respawned -= OnRespawned;
             }
@@ -164,7 +191,17 @@ namespace Survival.Client.Game
             }
         }
 
-        private void OnNotice(NoticeMsg n) => _hud.Notice(n);
+        private void OnNotice(NoticeMsg n)
+        {
+            // Short server codes are localized on the client
+            if (n.Text == "craft_failed")
+            {
+                _ui.ShowMessage(Loc.T("craft_failed"), Theme.Bad);
+                App.Audio.PlayUi(UiSound.Error);
+                return;
+            }
+            _hud.Notice(n);
+        }
         private void OnDied(DiedMsg d) => _hud.ShowDeath(d);
 
         private void OnRespawned()
@@ -200,6 +237,7 @@ namespace Survival.Client.Game
                 _session.SendInputs(_sim.PendingSend);
             }
             _sim.UpdateRemotes();
+            UpdateGathering(dt);
 
             _sky.SetTime(_sim.TimeOfDay01);
             PlaceCamera(dt);
@@ -214,8 +252,26 @@ namespace Survival.Client.Game
             bool escape = kb != null && kb.escapeKey.wasPressedThisFrame;
             var pad = Gamepad.current;
             if (pad != null && pad.startButton.wasPressedThisFrame) escape = true;
+            bool bag = _hud.Controls.Pressed("bag") || (kb != null && kb.tabKey.wasPressedThisFrame);
+            if (bag && !_hud.Paused && !_hud.DeathVisible) _ui.SetInventoryOpen(!_ui.InventoryOpen);
+            if (_ui.InventoryOpen && escape)
+            {
+                _ui.SetInventoryOpen(false);
+                return;
+            }
+            if (kb != null && !_ui.InventoryOpen)
+            {
+                if (kb.digit1Key.wasPressedThisFrame) _ui.SelectHotbar(0);
+                if (kb.digit2Key.wasPressedThisFrame) _ui.SelectHotbar(1);
+                if (kb.digit3Key.wasPressedThisFrame) _ui.SelectHotbar(2);
+                if (kb.digit4Key.wasPressedThisFrame) _ui.SelectHotbar(3);
+                if (kb.digit5Key.wasPressedThisFrame) _ui.SelectHotbar(4);
+                if (kb.digit6Key.wasPressedThisFrame) _ui.SelectHotbar(5);
+                if (kb.eKey.wasPressedThisFrame) _ui.UseHotbarItem();
+            }
             if (_hud.Controls.Pressed("menu") || escape)
             {
+                _ui.SetInventoryOpen(false);
                 _hud.SetPaused(!_hud.Paused);
                 SetCursorLock(false);
             }
@@ -233,7 +289,7 @@ namespace Survival.Client.Game
         {
             GameSettings s = App.Settings;
             MobileControls c = _hud.Controls;
-            bool blocked = _hud.Paused || _hud.DeathVisible;
+            bool blocked = _hud.Paused || _hud.DeathVisible || _ui.InventoryOpen;
 
             Vector2 move = c.Move;
             Vector2 look = c.ConsumeLook() * (0.12f * s.LookSensitivity);
@@ -293,6 +349,7 @@ namespace Survival.Client.Game
             if (jump) input.Buttons |= InputButtons.Jump;
             if (crouch) input.Buttons |= InputButtons.Crouch;
             if (sprint) input.Buttons |= InputButtons.Sprint;
+            input.HotbarSlot = (byte)_ui.SelectedHotbar;
             return input;
         }
 
@@ -327,10 +384,141 @@ namespace Survival.Client.Game
             {
                 _cam.transform.SetPositionAndRotation(eye, rot);
             }
+            if (_toolPivot != null) _toolPivot.gameObject.SetActive(_mode == CameraMode.FirstPerson && (st.Flags & MoveFlags.Dead) == 0);
 
             float fovTarget = 68f + (st.Sprinting ? 6f : 0f);
             _fovKick = Mathf.Lerp(_fovKick, fovTarget, 1f - Mathf.Exp(-dt * 6f));
             _cam.fieldOfView = _fovKick;
+        }
+
+        // ------------------------------------------------------------------ gathering
+
+        private void BuildToolView()
+        {
+            _toolPivot = new GameObject("ToolPivot").transform;
+            _toolPivot.SetParent(_cam.transform, false);
+            var go = new GameObject("Tool");
+            go.transform.SetParent(_toolPivot, false);
+            _toolMesh = go.AddComponent<MeshFilter>();
+            var mr = go.AddComponent<MeshRenderer>();
+            mr.sharedMaterial = App.Materials.Lit("tool", Color.white, 0.08f, 0.1f);
+            mr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            mr.receiveShadows = false;
+        }
+
+        private void OnNodesChanged()
+        {
+            if (_vegetation != null) _vegetation.SetDepleted(_session.DepletedNodes);
+            foreach (uint id in _session.DepletedNodes) _nodeHealth.Remove(id);
+        }
+
+        private void OnHitResult(HitResultMsg h)
+        {
+            if (h.Health == 0) _nodeHealth.Remove(h.NodeId);
+            else _nodeHealth[h.NodeId] = h.Health;
+            _ui.ShowGain(h.Item, h.Count);
+            _ui.ShowGain(h.Extra, h.ExtraCount);
+            if (h.Full) _ui.ShowMessage(Loc.T("inv_full"), Theme.Warn);
+            bool tree = h.Item == ItemId.Wood;
+            bool bush = h.Item == ItemId.Fiber;
+            App.Audio.Play(bush ? SfxSound.Pickup : tree ? SfxSound.Chop : SfxSound.Mine, 0.75f, Random.Range(0.92f, 1.08f));
+            _landKick = Mathf.Max(_landKick, 0.025f);
+        }
+
+        /// <summary>Nearest gatherable node the player is facing and can reach.</summary>
+        private bool FindTarget(out Survival.World.WorldNode best)
+        {
+            best = default;
+            MoveState st = _sim.Predicted;
+            float px = st.Position.X, pz = st.Position.Z;
+            float yawRad = _yaw * Mathf.Deg2Rad;
+            float fx = Mathf.Sin(yawRad), fz = Mathf.Cos(yawRad);
+            _nodeScratch.Clear();
+            _session.World.Nodes.Query(px, pz, GatherRules.Reach + 3f, _nodeScratch);
+            float bestScore = float.MaxValue;
+            bool found = false;
+            for (int i = 0; i < _nodeScratch.Count; i++)
+            {
+                Survival.World.WorldNode n = _nodeScratch[i];
+                if (!GatherRules.CanGather(n.Kind) || _session.DepletedNodes.Contains(n.Id)) continue;
+                float dx = n.X - px, dz = n.Z - pz;
+                float d = Mathf.Sqrt(dx * dx + dz * dz);
+                float edge = d - n.Radius;
+                if (edge > GatherRules.Reach || Mathf.Abs(n.Y - st.Position.Y) > 4f) continue;
+                float facing = d < 0.05f ? 1f : (dx * fx + dz * fz) / d;
+                // Wide nodes (rocks) are easy to face; thin ones need a tighter aim
+                float minFacing = edge < 0.8f ? 0.2f : 0.62f;
+                if (facing < minFacing) continue;
+                float score = edge + (1f - facing) * 4f;
+                if (score < bestScore)
+                {
+                    bestScore = score;
+                    best = n;
+                    found = true;
+                }
+            }
+            return found;
+        }
+
+        private void UpdateGathering(float dt)
+        {
+            Inventory inv = _session.Inventory;
+            MoveState st = _sim.Predicted;
+            bool alive = (st.Flags & MoveFlags.Dead) == 0;
+            bool playing = _ready && alive && _session.Phase == SessionPhase.Playing;
+            bool blocked = _hud.Paused || _hud.DeathVisible || _ui.InventoryOpen;
+
+            // Held item model follows the selected hotbar slot
+            ItemStack held = inv != null ? inv.Slots[_ui.SelectedHotbar] : default;
+            ItemId show = held.IsEmpty ? ItemId.None : held.Id;
+            if (show != _toolShown)
+            {
+                _toolShown = show;
+                _toolMesh.sharedMesh = show == ItemId.None ? null : Models.Tool(show);
+            }
+
+            _hasTarget = playing && FindTarget(out _target);
+            float health01 = 1f;
+            if (_hasTarget && _nodeHealth.TryGetValue(_target.Id, out byte hp)) health01 = hp / 255f;
+            _ui.SetTarget(_hasTarget && !blocked, _hasTarget ? _target.Kind : default, health01);
+            _ui.SetDrinkVisible(playing && !blocked && st.Position.Y < _session.World.Config.SeaLevel + 0.45f && _sim.Stats.Thirst < 95f);
+
+            // Swing: hold the HIT button (or left mouse button while the cursor is captured)
+            _swingCooldown -= dt;
+            bool attack = _hud.Controls.Held("attack");
+            var mouse = Mouse.current;
+            if (mouse != null && _cursorLocked && mouse.leftButton.isPressed) attack = true;
+            var pad = Gamepad.current;
+            if (pad != null && pad.rightTrigger.isPressed) attack = true;
+            if (attack && playing && !blocked && _swingCooldown <= 0f)
+            {
+                _swingCooldown = GatherRules.SwingSeconds;
+                _swing = 0f;
+                App.Audio.Play(SfxSound.Swing, 0.5f, Random.Range(0.9f, 1.1f));
+                if (_hasTarget)
+                {
+                    _pendingHit = _target.Id;
+                    _pendingHitDelay = GatherRules.SwingSeconds * 0.4f; // impact moment of the animation
+                }
+            }
+            if (_pendingHit != 0)
+            {
+                _pendingHitDelay -= dt;
+                if (_pendingHitDelay <= 0f)
+                {
+                    _session.SendHit(_pendingHit);
+                    _pendingHit = 0;
+                }
+            }
+
+            // First-person tool pose: rest at the lower right, chop forward and down on a swing
+            _swing = Mathf.Min(1f, _swing + dt / GatherRules.SwingSeconds);
+            float t = _swing;
+            float strike = t < 0.4f ? Mathf.SmoothStep(0f, 1f, t / 0.4f) : 1f - Mathf.SmoothStep(0f, 1f, (t - 0.4f) / 0.6f);
+            float speed = new Vector2(st.Velocity.X, st.Velocity.Z).magnitude;
+            float sway = Mathf.Sin(_bob * Mathf.PI) * Mathf.Clamp01(speed / 6f) * 0.012f;
+            _toolPivot.localPosition = new Vector3(0.30f - strike * 0.10f, -0.30f + sway + strike * 0.06f, 0.42f + strike * 0.16f);
+            _toolPivot.localRotation = Quaternion.Euler(-38f + strike * 78f, -12f - strike * 14f, 8f);
         }
 
         private void FeedbackAndAudio(float dt)

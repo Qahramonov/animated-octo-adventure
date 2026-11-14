@@ -27,6 +27,11 @@ namespace Survival.Client
         Splash,
         Hurt,
         Death,
+        Swing,
+        Chop,
+        Mine,
+        Pickup,
+        Eat,
     }
 
     public enum AmbienceLayer
@@ -97,6 +102,11 @@ namespace Survival.Client
             _sfx[SfxSound.Splash] = new[] { ProceduralAudio.Splash("splash", 0.6f) };
             _sfx[SfxSound.Hurt] = new[] { ProceduralAudio.Chime("hurt", new[] { 180f, 140f }, 0.25f, 0.4f) };
             _sfx[SfxSound.Death] = new[] { ProceduralAudio.Boom("death", 1.6f) };
+            _sfx[SfxSound.Swing] = new[] { ProceduralAudio.Whoosh("swing", 0.16f, 0.14f) };
+            _sfx[SfxSound.Chop] = new[] { ProceduralAudio.Footstep("chop0", 21, 1.5f), ProceduralAudio.Footstep("chop1", 22, 1.7f), ProceduralAudio.Footstep("chop2", 23, 1.4f) };
+            _sfx[SfxSound.Mine] = new[] { ProceduralAudio.Blip("mine0", 2100f, 0.07f, 0.4f), ProceduralAudio.Blip("mine1", 2500f, 0.06f, 0.4f), ProceduralAudio.Blip("mine2", 1850f, 0.08f, 0.4f) };
+            _sfx[SfxSound.Pickup] = new[] { ProceduralAudio.Blip("pickup", 900f, 0.07f, 0.3f) };
+            _sfx[SfxSound.Eat] = new[] { ProceduralAudio.Footstep("eat", 31, 0.5f) };
 
             _ambience[(int)AmbienceLayer.Wind].clip = ProceduralAudio.WindLoop("amb_wind", 6f);
             _ambience[(int)AmbienceLayer.Ocean].clip = ProceduralAudio.OceanLoop("amb_ocean", 8f);

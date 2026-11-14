@@ -539,4 +539,127 @@ namespace Survival.Networking
             Text = r.GetString(160),
         };
     }
+
+    /// <summary>Full inventory of the receiving player (sent reliably whenever it changes).</summary>
+    public static class InventoryMsg
+    {
+        public static void Write(NetDataWriter w, Inventory inv)
+        {
+            w.Put((byte)MsgId.Inventory);
+            for (int i = 0; i < Inventory.Size; i++)
+            {
+                w.Put((byte)inv.Slots[i].Id);
+                if (inv.Slots[i].Id != ItemId.None) w.Put(inv.Slots[i].Count);
+            }
+        }
+
+        public static void Read(NetDataReader r, Inventory inv)
+        {
+            for (int i = 0; i < Inventory.Size; i++)
+            {
+                var id = (ItemId)r.GetByte();
+                inv.Slots[i] = id == ItemId.None ? default : new ItemStack { Id = id, Count = r.GetUShort() };
+            }
+        }
+    }
+
+    /// <summary>Client request: one tool swing at a world node.</summary>
+    public struct HitMsg
+    {
+        public uint NodeId;
+
+        public void Write(NetDataWriter w)
+        {
+            w.Put((byte)MsgId.ClientHit);
+            w.Put(NodeId);
+        }
+
+        public static HitMsg Read(NetDataReader r) => new HitMsg { NodeId = r.GetUInt() };
+    }
+
+    /// <summary>Server answer to the gatherer: node health and what was gained.</summary>
+    public struct HitResultMsg
+    {
+        public uint NodeId;
+        /// <summary>Remaining health 0..255 (0 = depleted).</summary>
+        public byte Health;
+        public ItemId Item;
+        public ushort Count;
+        public ItemId Extra;
+        public ushort ExtraCount;
+        /// <summary>True when the inventory was full and some items were lost.</summary>
+        public bool Full;
+
+        public void Write(NetDataWriter w)
+        {
+            w.Put((byte)MsgId.HitResult);
+            w.Put(NodeId);
+            w.Put(Health);
+            w.Put((byte)Item);
+            w.Put(Count);
+            w.Put((byte)Extra);
+            w.Put(ExtraCount);
+            w.Put(Full);
+        }
+
+        public static HitResultMsg Read(NetDataReader r) => new HitResultMsg
+        {
+            NodeId = r.GetUInt(),
+            Health = r.GetByte(),
+            Item = (ItemId)r.GetByte(),
+            Count = r.GetUShort(),
+            Extra = (ItemId)r.GetByte(),
+            ExtraCount = r.GetUShort(),
+            Full = r.GetBool(),
+        };
+    }
+
+    /// <summary>Depleted / respawned world nodes. <c>Reset</c> replaces the client's whole set.</summary>
+    public static class NodeStateMsg
+    {
+        public const int MaxPerMessage = 200;
+
+        public static void Write(NetDataWriter w, bool reset, bool depleted, IReadOnlyList<uint> ids, int start, int count)
+        {
+            w.Put((byte)MsgId.NodeState);
+            w.Put((byte)((reset ? 1 : 0) | (depleted ? 2 : 0)));
+            w.Put((ushort)count);
+            for (int i = 0; i < count; i++) w.Put(ids[start + i]);
+        }
+
+        public static void Read(NetDataReader r, out bool reset, out bool depleted, List<uint> ids)
+        {
+            byte flags = r.GetByte();
+            reset = (flags & 1) != 0;
+            depleted = (flags & 2) != 0;
+            int n = r.GetUShort();
+            ids.Clear();
+            for (int i = 0; i < n; i++) ids.Add(r.GetUInt());
+        }
+    }
+
+    /// <summary>Small client requests that carry one or two bytes.</summary>
+    public static class ActionMsg
+    {
+        public static void WriteCraft(NetDataWriter w, byte recipeId)
+        {
+            w.Put((byte)MsgId.ClientCraft);
+            w.Put(recipeId);
+        }
+
+        public static void WriteUse(NetDataWriter w, byte slot)
+        {
+            w.Put((byte)MsgId.ClientUseItem);
+            w.Put(slot);
+        }
+
+        public static void WriteMove(NetDataWriter w, byte from, byte to)
+        {
+            w.Put((byte)MsgId.ClientMoveItem);
+            w.Put(from);
+            w.Put(to);
+        }
+
+        public static void WriteDrink(NetDataWriter w) => w.Put((byte)MsgId.ClientDrink);
+    }
 }

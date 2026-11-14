@@ -49,6 +49,18 @@ namespace Survival.Client.WorldView
         private Task<BuildResult> _task;
         private Vector3 _lastBuildPos = new Vector3(float.MaxValue, 0, 0);
         private readonly Plane[] _planes = new Plane[6];
+        private HashSet<uint> _depleted = new HashSet<uint>();
+        private bool _dirty;
+
+        /// <summary>Pseudo node kind used to draw the stump of a felled tree.</summary>
+        public const NodeKind StumpKind = (NodeKind)200;
+
+        /// <summary>Replaces the set of felled/mined nodes (copied, so the caller may keep mutating its own set).</summary>
+        public void SetDepleted(HashSet<uint> live)
+        {
+            _depleted = new HashSet<uint>(live);
+            _dirty = true;
+        }
 
         public float NearDistance = 70f;
         public float Distance = 220f;
@@ -89,12 +101,13 @@ namespace Survival.Client.WorldView
         {
             if (_viewer == null) return;
             Vector3 p = _viewer.position;
-            if (_task == null && (p - _lastBuildPos).sqrMagnitude > 14f * 14f)
+            if (_task == null && (_dirty || (p - _lastBuildPos).sqrMagnitude > 14f * 14f))
             {
                 _lastBuildPos = p;
+                _dirty = false;
                 WorldRuntime world = _world;
                 float near = NearDistance, dist = Distance, far = TreeFarDistance, density = Density;
-                Func<uint, bool> alive = _world.IsNodeAlive;
+                HashSet<uint> alive = _depleted; // immutable snapshot, safe on the worker thread
                 _task = Task.Run(() => Build(world, p, near, dist, far, density, alive));
             }
             if (_task != null && _task.IsCompleted)
@@ -113,7 +126,7 @@ namespace Survival.Client.WorldView
             Draw();
         }
 
-        private static BuildResult Build(WorldRuntime world, Vector3 p, float near, float dist, float far, float density, Func<uint, bool> alive)
+        private static BuildResult Build(WorldRuntime world, Vector3 p, float near, float dist, float far, float density, HashSet<uint> depleted)
         {
             var result = new BuildResult();
             var temp = new Dictionary<int, List<(int block, Matrix4x4 m, Vector3 pos)>>();
@@ -133,15 +146,21 @@ namespace Survival.Client.WorldView
                     for (int i = 0; i < nodes.Length; i++)
                     {
                         WorldNode n = nodes[i];
-                        if (alive != null && !alive(n.Id)) continue;
                         float dx = n.X - p.x, dz = n.Z - p.z;
                         float d2 = dx * dx + dz * dz;
                         bool tree = NodeKinds.IsTree(n.Kind);
+                        if (depleted.Contains(n.Id))
+                        {
+                            // Felled trees leave a stump nearby; mined nodes and picked bushes disappear
+                            if (!tree || d2 > dist2) continue;
+                            n.Kind = StumpKind;
+                            tree = false;
+                        }
                         bool ore = NodeKinds.IsOre(n.Kind);
                         if (d2 > (tree ? far2 : dist2)) continue;
                         // Density thins bushes/boulders on low quality; trees and resources always stay (gameplay)
-                        if (!tree && !ore && Hashing.To01(Hashing.Mix(n.Id)) > density) continue;
-                        int lod = d2 < near2 ? 0 : 1;
+                        if (!tree && !ore && n.Kind != StumpKind && Hashing.To01(Hashing.Mix(n.Id)) > density) continue;
+                        int lod = n.Kind == StumpKind || d2 < near2 ? 0 : 1;
                         int key = BatchKey(n.Kind, lod);
                         if (!temp.TryGetValue(key, out var list))
                         {

@@ -71,6 +71,19 @@ namespace Survival.Client
         public event Action<DiedMsg> Died;
         public event Action<ChatMsg> Chat;
         public event Action Respawned;
+        public event Action InventoryChanged;
+        public event Action<HitResultMsg> HitResult;
+        /// <summary>The set of depleted world nodes changed (vegetation must be rebuilt).</summary>
+        public event Action NodesChanged;
+
+        /// <summary>Felled trees / mined nodes (main thread only; take a copy for worker threads).</summary>
+        public readonly HashSet<uint> DepletedNodes = new HashSet<uint>();
+        public Inventory Inventory => _client?.Inventory;
+        public void SendHit(uint nodeId) => _client?.SendHit(nodeId);
+        public void SendCraft(byte recipeId) => _client?.SendCraft(recipeId);
+        public void SendUseItem(int slot) => _client?.SendUseItem(slot);
+        public void SendMoveItem(int from, int to) => _client?.SendMoveItem(from, to);
+        public void SendDrink() => _client?.SendDrink();
         public event Action<SessionPhase> PhaseChanged;
 
         public void ConnectOnline(ServerEntry entry)
@@ -152,6 +165,18 @@ namespace Survival.Client
             };
             _client.NoticeReceived += n => Notice?.Invoke(n);
             _client.ChatReceived += c => Chat?.Invoke(c);
+            _client.InventoryReceived += () => InventoryChanged?.Invoke();
+            _client.HitResultReceived += h => HitResult?.Invoke(h);
+            _client.NodeStateReceived += (reset, depleted, ids) =>
+            {
+                if (reset) DepletedNodes.Clear();
+                for (int i = 0; i < ids.Count; i++)
+                {
+                    if (depleted) DepletedNodes.Add(ids[i]);
+                    else DepletedNodes.Remove(ids[i]);
+                }
+                NodesChanged?.Invoke();
+            };
             _client.ConnectionLost += () => SetPhase(SessionPhase.Reconnecting);
             _client.Failed += reason => Fail(Localize(reason));
             SetPhase(SessionPhase.Connecting);
@@ -193,6 +218,8 @@ namespace Survival.Client
             }
 
             World = new WorldRuntime(w.World);
+            DepletedNodes.Clear();
+            World.IsNodeAlive = id => !DepletedNodes.Contains(id);
             Sim = new ClientSimulation(World, MovementSettings.Default, w.TickRate);
             Sim.Initialize(w);
             _sessionStart = Time.realtimeSinceStartupAsDouble;

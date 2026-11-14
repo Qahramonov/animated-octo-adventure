@@ -41,6 +41,7 @@ namespace Survival.Client.Game
         private int _fpsFrames;
 
         public MobileControls Controls { get; private set; }
+        public Transform CanvasRoot => _canvas.transform;
         public RectTransform Safe => _safe;
         public bool Paused => _pause != null && _pause.activeSelf;
         public bool DeathVisible => _death != null && _death.activeSelf;

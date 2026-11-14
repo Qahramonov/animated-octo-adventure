@@ -35,6 +35,8 @@ namespace Survival.Server
         /// <summary>Owning connection for players (null for bots or while disconnected).</summary>
         public PlayerSession Session;
         public PlayerRecord Record;
+        /// <summary>Inventory (players only; the same instance as <see cref="PlayerRecord.Items"/>).</summary>
+        public Inventory Items;
         public BotBrain Bot;
 
         public bool IsDead => Stats.Health <= 0f;
@@ -84,6 +86,8 @@ namespace Survival.Server
         public int TicksWithoutInput;
         public PlayerInput LastInput;
         public int RejectedInputs;
+        public double LastSwingAt = -10;
+        public double LastUseAt = -10;
         // Diagnostics (shown by the 'players' admin command)
         public int InputsDropped;
         public int NeutralSteps;

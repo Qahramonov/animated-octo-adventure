@@ -28,6 +28,8 @@ namespace Survival.Client.Game
             new ButtonDef { Id = "crouch", Label = "crouch", DefaultPos = new Vector2(0.80f, 0.12f), Size = 120f, Toggle = true },
             new ButtonDef { Id = "sprint", Label = "sprint", DefaultPos = new Vector2(0.80f, 0.32f), Size = 120f, Toggle = true },
             new ButtonDef { Id = "menu", Label = "menu", DefaultPos = new Vector2(0.96f, 0.93f), Size = 96f },
+            new ButtonDef { Id = "attack", Label = "attack", DefaultPos = new Vector2(0.91f, 0.46f), Size = 170f },
+            new ButtonDef { Id = "bag", Label = "bag", DefaultPos = new Vector2(0.88f, 0.93f), Size = 96f },
         };
 
         public const string JoystickId = "joystick";

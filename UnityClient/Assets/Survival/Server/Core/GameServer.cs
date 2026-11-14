@@ -103,6 +103,7 @@ namespace Survival.Server
             _rng = new Rng((uint)config.WorldSeed ^ 0xC0FFEEu);
             _bots = new BotManager(this, (uint)config.WorldSeed);
             _replication = new Replication(this);
+            InitGathering();
 
             _listener.ConnectionRequestEvent += OnConnectionRequest;
             _listener.PeerConnectedEvent += OnPeerConnected;
@@ -233,6 +234,7 @@ namespace Survival.Server
             // Replication
             if (CurrentTick % (uint)Config.SnapshotInterval == 0) _replication.SendSnapshots(CurrentTick);
 
+            TickNodes(now);
             ExpireDisconnectedSessions(now);
 
             if (now - _lastAutosave > Config.AutosaveSeconds)
@@ -528,6 +530,7 @@ namespace Survival.Server
                 ServerEntity entity = CreateEntity(EntityType.Player, nickname, pos, restore ? record.Yaw : _rng.Range(0f, 360f));
                 entity.Stats = record.Alive ? record.Stats : SurvivalStats.Fresh;
                 entity.Record = record;
+                entity.Items = record.Items;
                 record.Alive = true;
 
                 session = new PlayerSession { PlayerId = data.PlayerId, Entity = entity };
@@ -625,10 +628,26 @@ namespace Survival.Server
                         {
                             s.Ready = true;
                             Log.Info("Net", $"{s.Nickname} finished loading ({(Time - s.ConnectedAt):0.0}s)");
+                            SendInitialState(s);
                         }
                         break;
                     case MsgId.ClientRespawn:
                         if (s.Entity != null && s.Entity.IsDead && s.Entity.DeadTime >= Config.RespawnDelaySeconds - 0.25f) Respawn(s.Entity);
+                        break;
+                    case MsgId.ClientHit:
+                        HandleHit(s, HitMsg.Read(reader).NodeId);
+                        break;
+                    case MsgId.ClientCraft:
+                        HandleCraft(s, reader.GetByte());
+                        break;
+                    case MsgId.ClientUseItem:
+                        HandleUse(s, reader.GetByte());
+                        break;
+                    case MsgId.ClientMoveItem:
+                        HandleMove(s, reader.GetByte(), reader.GetByte());
+                        break;
+                    case MsgId.ClientDrink:
+                        HandleDrink(s);
                         break;
                     case MsgId.ClientChat:
                         ChatMsg chat = ChatMsg.Read(reader);
