@@ -13,7 +13,8 @@ Shader "OROL/Terrain"
         _RockN ("Rock normal", 2D) = "bump" {}
         _Tiling ("Tiling (1/m)", Float) = 0.22
         _SeaLevel ("Sea level", Float) = 30
-        _TintStrength ("Vertex tint", Range(0, 1)) = 0.6
+        _TintStrength ("Vertex tint", Range(0, 1)) = 0.45
+        _Brightness ("Brightness", Range(0.5, 3)) = 1.55
         _NormalStrength ("Detail normal", Range(0, 2)) = 0.9
         _ClipInnerRadius ("Clip Inner Radius", Float) = 0
         _Wrap ("Light Wrap", Range(0, 1)) = 0.2
@@ -53,6 +54,7 @@ Shader "OROL/Terrain"
                 float _Tiling;
                 float _SeaLevel;
                 half _TintStrength;
+                half _Brightness;
                 half _NormalStrength;
                 float _ClipInnerRadius;
                 half _Wrap;
@@ -128,7 +130,7 @@ Shader "OROL/Terrain"
 
                 half3 albedo = grass * grassW + forest * forestW + sand * sandW + rock * rockW;
                 // Large-scale brightness variation hides texture repetition
-                albedo *= 0.86 + 0.28 * ValueNoise(p.xz * 0.06);
+                albedo *= (0.86 + 0.28 * ValueNoise(p.xz * 0.06)) * _Brightness;
                 // Vertex colour (biome / snow / beach colour of the generator), normalised around mid grey
                 albedo *= lerp(half3(1, 1, 1), saturate(i.color.rgb * 2.3), _TintStrength);
 
@@ -170,6 +172,7 @@ Shader "OROL/Terrain"
                 float _Tiling;
                 float _SeaLevel;
                 half _TintStrength;
+                half _Brightness;
                 half _NormalStrength;
                 float _ClipInnerRadius;
                 half _Wrap;
@@ -211,6 +214,7 @@ Shader "OROL/Terrain"
                 float _Tiling;
                 float _SeaLevel;
                 half _TintStrength;
+                half _Brightness;
                 half _NormalStrength;
                 float _ClipInnerRadius;
                 half _Wrap;

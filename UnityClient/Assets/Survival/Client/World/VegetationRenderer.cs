@@ -18,6 +18,8 @@ namespace Survival.Client.WorldView
     public sealed class VegetationRenderer : MonoBehaviour
     {
         private const float BlockSize = 128f;
+        /// <summary>Instances per draw call: must not exceed the shaders' instancing array size (maxcount:40, GLES uniform limits).</summary>
+        private const int MaxBatch = 40;
 
         private struct Range
         {
@@ -190,7 +192,7 @@ namespace Survival.Client.WorldView
                 for (int i = 0; i < list.Count; i++)
                 {
                     batch.Matrices[i] = list[i].m;
-                    bool end = i == list.Count - 1 || list[i + 1].block != list[i].block || i - start + 1 >= 1023;
+                    bool end = i == list.Count - 1 || list[i + 1].block != list[i].block || i - start + 1 >= MaxBatch;
                     if (end)
                     {
                         Bounds b = new Bounds(list[start].pos, Vector3.one);
