@@ -12,20 +12,23 @@ namespace Survival.Client.WorldView
     /// <summary>
     /// GPU-instanced trees, bushes, boulders and resource nodes from the deterministic node layout.
     /// Instance lists are rebuilt on a worker thread when the viewer moves; each frame only visible
-    /// 128 m blocks are drawn (frustum culling per block) with Graphics.RenderMeshInstanced.
+    /// 128 m blocks are merged into one mesh per block and kind (frustum culling per block).
     /// Near instances use the detailed LOD with shadows, far instances a cheap LOD without.
     /// </summary>
     public sealed class VegetationRenderer : MonoBehaviour
     {
         private const float BlockSize = 128f;
-        /// <summary>Instances per draw call: must not exceed the shaders' instancing array size (maxcount:40, GLES uniform limits).</summary>
-        private const int MaxBatch = 40;
+        /// <summary>Instances merged into one mesh / draw call.</summary>
+        private const int MaxBatch = 300;
 
         private struct Range
         {
             public int Start;
             public int Count;
             public Bounds Bounds;
+            /// <summary>Identity of the instance set (kind, LOD, block, positions) for the combined-mesh cache.</summary>
+            public long Hash;
+            public Mesh Combined;
         }
 
         private sealed class Batch
@@ -80,13 +83,13 @@ namespace Survival.Client.WorldView
             v._world = world;
             v._viewer = viewer;
             v._camera = cam;
-            v._foliage = App.Materials.Instanced(App.Materials.Lit("foliage", Color.white, 0f, 0f, 0f, 0.6f));
-            v._rock = App.Materials.Instanced(App.Materials.Lit("rock", Color.white, 0.05f, 0.1f));
+            v._foliage = (App.Materials.Lit("foliage", Color.white, 0f, 0f, 0f, 0.6f));
+            v._rock = (App.Materials.Lit("rock", Color.white, 0.05f, 0.1f));
             // Textured rock materials (triplanar scans); null entries fall back to the vertex-colour rock
-            v._rockBoulder = App.Materials.Instanced(App.Materials.Rock("rock_boulder", new Color(0.92f, 0.9f, 0.88f), Color.white, 0f));
-            v._rockStone = App.Materials.Instanced(App.Materials.Rock("rock_stone", new Color(1.05f, 1.05f, 1.08f), new Color(0.9f, 0.9f, 0.92f), 0.4f));
-            v._rockMetal = App.Materials.Instanced(App.Materials.Rock("rock_metal", new Color(0.78f, 0.72f, 0.68f), new Color(0.74f, 0.4f, 0.22f), 0.62f));
-            v._rockSulfur = App.Materials.Instanced(App.Materials.Rock("rock_sulfur", new Color(0.95f, 0.92f, 0.8f), new Color(0.96f, 0.82f, 0.12f), 0.62f));
+            v._rockBoulder = (App.Materials.Rock("rock_boulder", new Color(0.92f, 0.9f, 0.88f), Color.white, 0f));
+            v._rockStone = (App.Materials.Rock("rock_stone", new Color(1.05f, 1.05f, 1.08f), new Color(0.9f, 0.9f, 0.92f), 0.4f));
+            v._rockMetal = (App.Materials.Rock("rock_metal", new Color(0.78f, 0.72f, 0.68f), new Color(0.74f, 0.4f, 0.22f), 0.62f));
+            v._rockSulfur = (App.Materials.Rock("rock_sulfur", new Color(0.95f, 0.92f, 0.8f), new Color(0.96f, 0.82f, 0.12f), 0.62f));
             v.ApplyQuality();
             QualityManager.Changed += v.ApplyQuality;
             return v;
@@ -122,8 +125,7 @@ namespace Survival.Client.WorldView
             {
                 if (_task.Status == TaskStatus.RanToCompletion)
                 {
-                    _batches = _task.Result.Batches;
-                    Instances = _task.Result.Instances;
+                    ApplyBuild(_task.Result);
                 }
                 else
                 {
@@ -198,7 +200,13 @@ namespace Survival.Client.WorldView
                         Bounds b = new Bounds(list[start].pos, Vector3.one);
                         for (int k = start + 1; k <= i; k++) b.Encapsulate(list[k].pos);
                         b.Expand(new Vector3(8f, 24f, 8f));
-                        batch.Ranges.Add(new Range { Start = start, Count = i - start + 1, Bounds = b });
+                        long hash = kv.Key * 1000003L + list[start].block;
+                        for (int k = start; k <= i; k++)
+                        {
+                            Vector3 q = list[k].pos;
+                            hash = hash * 31L + (long)(q.x * 64f) * 73856093L + (long)(q.z * 64f) * 19349663L;
+                        }
+                        batch.Ranges.Add(new Range { Start = start, Count = i - start + 1, Bounds = b, Hash = hash });
                         start = i + 1;
                     }
                 }
@@ -208,6 +216,54 @@ namespace Survival.Client.WorldView
             return result;
         }
 
+        private readonly Dictionary<long, Mesh> _combined = new Dictionary<long, Mesh>();
+        private readonly List<CombineInstance> _combineScratch = new List<CombineInstance>(MaxBatch);
+
+        /// <summary>
+        /// Turns each range of instances into one combined mesh (reused from the cache when the same
+        /// instances are still in range). GPU instancing is not used: instanced draws rendered nothing
+        /// on OpenGL ES devices, while plain meshes work everywhere and batch well.
+        /// </summary>
+        private void ApplyBuild(BuildResult result)
+        {
+            var next = new Dictionary<long, Mesh>();
+            foreach (Batch b in result.Batches.Values)
+            {
+                Mesh source = Models.Get(b.Kind, b.Lod);
+                for (int i = 0; i < b.Ranges.Count; i++)
+                {
+                    Range r = b.Ranges[i];
+                    if (!_combined.TryGetValue(r.Hash, out Mesh mesh) || mesh == null)
+                    {
+                        _combineScratch.Clear();
+                        for (int k = 0; k < r.Count; k++) _combineScratch.Add(new CombineInstance { mesh = source, transform = b.Matrices[r.Start + k] });
+                        mesh = new Mesh { name = "veg_" + b.Kind + "_" + b.Lod, indexFormat = UnityEngine.Rendering.IndexFormat.UInt32 };
+                        mesh.CombineMeshes(_combineScratch.ToArray(), true, true, false);
+                        mesh.UploadMeshData(true);
+                    }
+                    next[r.Hash] = mesh;
+                    r.Combined = mesh;
+                    b.Ranges[i] = r;
+                }
+            }
+            foreach (KeyValuePair<long, Mesh> kv in _combined)
+            {
+                if (!next.ContainsKey(kv.Key) && kv.Value != null) Destroy(kv.Value);
+            }
+            _combined.Clear();
+            foreach (KeyValuePair<long, Mesh> kv in next) _combined[kv.Key] = kv.Value;
+            _batches = result.Batches;
+            Instances = result.Instances;
+        }
+
+        private void OnDisable()
+        {
+            foreach (Mesh m in _combined.Values) if (m != null) Destroy(m);
+            _combined.Clear();
+            _batches = new Dictionary<int, Batch>();
+            _dirty = true;
+        }
+
         private void Draw()
         {
             if (_camera == null) return;
@@ -215,7 +271,6 @@ namespace Survival.Client.WorldView
             int calls = 0;
             foreach (Batch b in _batches.Values)
             {
-                Mesh mesh = Models.Get(b.Kind, b.Lod);
                 bool rocky = b.Kind == NodeKind.Boulder || NodeKinds.IsOre(b.Kind);
                 Material rockMat = b.Kind == NodeKind.Boulder ? _rockBoulder : b.Kind == NodeKind.StoneNode ? _rockStone
                     : b.Kind == NodeKind.MetalNode ? _rockMetal : _rockSulfur;
@@ -227,9 +282,9 @@ namespace Survival.Client.WorldView
                 };
                 foreach (Range r in b.Ranges)
                 {
-                    if (!GeometryUtility.TestPlanesAABB(_planes, r.Bounds)) continue;
+                    if (r.Combined == null || !GeometryUtility.TestPlanesAABB(_planes, r.Bounds)) continue;
                     rp.worldBounds = r.Bounds;
-                    Graphics.RenderMeshInstanced(rp, mesh, 0, b.Matrices, r.Count, r.Start);
+                    Graphics.RenderMesh(rp, r.Combined, 0, Matrix4x4.identity);
                     calls++;
                 }
             }

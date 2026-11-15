@@ -64,7 +64,8 @@ namespace Survival.Editor
             mi.importLights = false;
             mi.importAnimation = false;
             mi.importBlendShapes = false;
-            mi.isReadable = false;
+            // World objects (*_lod0/_lod1) are merged into block meshes at runtime, which needs readable meshes
+            mi.isReadable = System.IO.Path.GetFileNameWithoutExtension(assetPath).Contains("_lod");
             mi.meshCompression = ModelImporterMeshCompression.Low;
             mi.optimizeMeshVertices = true;
             mi.optimizeMeshPolygons = true;
@@ -170,7 +171,7 @@ namespace Survival.Editor
                     for (int s = 1; s < m.subMeshCount; s++) tris += (int)(m.GetIndexCount(s) / 3);
                     if (m.uv == null || m.uv.Length == 0) uv = false;
                     if (m.normals == null || m.normals.Length == 0) normals = false;
-                    if (m.isReadable) r.Warnings.Add($"{path}: mesh '{m.name}' is readable");
+                    if (m.isReadable && !name.Contains("_lod")) r.Warnings.Add($"{path}: mesh '{m.name}' is readable");
                     Vector3 size = m.bounds.size;
                     if (size.magnitude > 60f || size.magnitude < 0.01f) r.Warnings.Add($"{path}: suspicious scale, bounds {size}");
                 }

@@ -42,7 +42,7 @@ namespace Survival.Client.Rendering
                 case (NodeKind)200: Stump(); break;
                 default: B.Box(Vector3.up * 0.5f, Vector3.one, MeshBuilder.Rgb(1, 0, 1)); break;
             }
-            m = B.ToMesh(key);
+            m = B.ToMesh(key, true, true); // readable: the vegetation renderer merges instances into block meshes
             Cache[key] = m;
             return m;
         }
