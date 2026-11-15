@@ -24,12 +24,12 @@ namespace Survival.Client.Game
 
         public static readonly ButtonDef[] Buttons =
         {
-            new ButtonDef { Id = "jump", Label = "jump", DefaultPos = new Vector2(0.92f, 0.22f), Size = 150f },
-            new ButtonDef { Id = "crouch", Label = "crouch", DefaultPos = new Vector2(0.80f, 0.12f), Size = 120f, Toggle = true },
-            new ButtonDef { Id = "sprint", Label = "sprint", DefaultPos = new Vector2(0.80f, 0.32f), Size = 120f, Toggle = true },
-            new ButtonDef { Id = "menu", Label = "menu", DefaultPos = new Vector2(0.96f, 0.93f), Size = 96f },
-            new ButtonDef { Id = "attack", Label = "attack", DefaultPos = new Vector2(0.91f, 0.46f), Size = 170f },
-            new ButtonDef { Id = "bag", Label = "bag", DefaultPos = new Vector2(0.88f, 0.93f), Size = 96f },
+            new ButtonDef { Id = "jump", Label = "jump", DefaultPos = new Vector2(0.925f, 0.2f), Size = 132f },
+            new ButtonDef { Id = "crouch", Label = "crouch", DefaultPos = new Vector2(0.815f, 0.11f), Size = 108f, Toggle = true },
+            new ButtonDef { Id = "sprint", Label = "sprint", DefaultPos = new Vector2(0.815f, 0.3f), Size = 108f, Toggle = true },
+            new ButtonDef { Id = "menu", Label = "menu", DefaultPos = new Vector2(0.962f, 0.925f), Size = 84f },
+            new ButtonDef { Id = "attack", Label = "attack", DefaultPos = new Vector2(0.915f, 0.44f), Size = 164f },
+            new ButtonDef { Id = "bag", Label = "bag", DefaultPos = new Vector2(0.905f, 0.925f), Size = 84f },
         };
 
         public const string JoystickId = "joystick";
@@ -166,10 +166,10 @@ namespace Survival.Client.Game
             _base.pivot = new Vector2(0.5f, 0.5f);
             _base.sizeDelta = new Vector2(size, size);
             _baseImg = _base.gameObject.AddComponent<Image>();
-            _baseImg.sprite = UISprites.Ring(128, 0.08f);
-            _baseImg.color = new Color(1, 1, 1, 0.45f * opacity);
+            _baseImg.sprite = UISprites.Ring(128, 0.045f);
+            _baseImg.color = new Color(1, 1, 1, 0.32f * opacity);
             _baseImg.raycastTarget = edit;
-            Image fill = UIFactory.Image(_base, "Fill", new Color(0, 0, 0, 0.25f * opacity), UISprites.Circle(128));
+            Image fill = UIFactory.Image(_base, "Fill", new Color(0.03f, 0.035f, 0.04f, 0.32f * opacity), UISprites.Circle(128));
             UIFactory.Stretch(fill.rectTransform, 6);
             _knob = UIFactory.Image(_base, "Knob", new Color(1, 1, 1, 0.75f * opacity), UISprites.Circle(96)).rectTransform;
             _knob.sizeDelta = new Vector2(size * 0.42f, size * 0.42f);
@@ -277,13 +277,18 @@ namespace Survival.Client.Game
 
         public static TouchButton Create(RectTransform parent, MobileControls.ButtonDef def, Vector2 normalized, float size, float opacity, bool edit)
         {
-            Image bg = UIFactory.Image(parent, "Btn_" + def.Id, new Color(0.08f, 0.1f, 0.13f, 0.55f * opacity), UISprites.Circle(128));
+            // Rounded glass tile with a pictogram (no text): reads at a glance and hides less of the view
+            int radius = Mathf.Clamp(Mathf.RoundToInt(size * 0.26f), 16, 48);
+            bool primary = def.Id == "attack";
+            Image bg = UIFactory.Image(parent, "Btn_" + def.Id, Theme.Glass.WithAlpha(0.62f * opacity), UISprites.Rounded(radius));
             bg.raycastTarget = true;
             bg.rectTransform.anchorMin = bg.rectTransform.anchorMax = Vector2.zero;
             bg.rectTransform.sizeDelta = new Vector2(size, size);
-            Image ring = UIFactory.Image(bg.transform, "Ring", new Color(1, 1, 1, 0.5f * opacity), UISprites.Ring(128, 0.06f));
+            Image ring = UIFactory.Image(bg.transform, "Border", (primary ? Theme.Accent : Color.white).WithAlpha((primary ? 0.85f : 0.2f) * opacity), UISprites.Rounded(radius, primary ? 3 : 2));
             UIFactory.Stretch(ring.rectTransform);
-            Text label = UIFactory.Label(bg.transform, "Label", Loc.T(def.Label), Mathf.RoundToInt(size * 0.17f), new Color(1, 1, 1, 0.9f * opacity), TextAnchor.MiddleCenter, UIFactory.Bold);
+            Image icon = UIFactory.Image(bg.transform, "Icon", new Color(1, 1, 1, 0.92f * opacity), UISprites.Icon(def.Id, 128));
+            UIFactory.Place(icon.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(size * 0.5f, size * 0.5f));
+            Text label = UIFactory.Label(bg.transform, "Label", edit ? Loc.T(def.Label) : string.Empty, Mathf.RoundToInt(size * 0.14f), new Color(1, 1, 1, 0.9f * opacity), TextAnchor.LowerCenter, UIFactory.Bold);
             UIFactory.Stretch(label.rectTransform, 6);
             var b = bg.gameObject.AddComponent<TouchButton>();
             b._bg = bg;
@@ -335,7 +340,7 @@ namespace Survival.Client.Game
         private void UpdateVisual()
         {
             bool active = Held || On;
-            _bg.color = active ? Theme.Accent.WithAlpha(0.75f * _opacity + 0.15f) : new Color(0.08f, 0.1f, 0.13f, 0.55f * _opacity);
+            _bg.color = active ? Theme.Accent.WithAlpha(0.7f * _opacity + 0.15f) : Theme.Glass.WithAlpha(0.62f * _opacity);
         }
     }
 

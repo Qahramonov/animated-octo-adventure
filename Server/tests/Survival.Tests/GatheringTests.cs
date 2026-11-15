@@ -52,6 +52,19 @@ namespace Survival.Tests
         }
 
         [Fact]
+        public void SplitMovesHalfIntoAnEmptySlot()
+        {
+            var inv = new Inventory();
+            inv.Slots[6] = new ItemStack { Id = ItemId.Wood, Count = 101 };
+            Assert.True(inv.Split(6));
+            Assert.Equal(51, inv.Slots[6].Count);
+            Assert.Equal(50, inv.Slots[7].Count);
+            Assert.Equal(101, inv.CountOf(ItemId.Wood));
+            inv.Slots[0] = new ItemStack { Id = ItemId.Rock, Count = 1 };
+            Assert.False(inv.Split(0)); // a single item cannot be split
+        }
+
+        [Fact]
         public void CraftConsumesIngredientsOnlyOnSuccess()
         {
             Recipe hatchet = ItemDb.FindRecipe(1);

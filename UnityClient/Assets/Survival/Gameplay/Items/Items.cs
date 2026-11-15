@@ -227,6 +227,25 @@ namespace Survival.Gameplay
             return true;
         }
 
+        /// <summary>Moves half of a stack into the first empty backpack slot.</summary>
+        public bool Split(int slot)
+        {
+            if ((uint)slot >= Size || Slots[slot].Count < 2) return false;
+            for (int pass = 0; pass < 2; pass++)
+            {
+                int from = pass == 0 ? HotbarSlots : 0, to = pass == 0 ? Size : HotbarSlots;
+                for (int i = from; i < to; i++)
+                {
+                    if (!Slots[i].IsEmpty) continue;
+                    ushort half = (ushort)(Slots[slot].Count / 2);
+                    Slots[i] = new ItemStack { Id = Slots[slot].Id, Count = half };
+                    Slots[slot].Count -= half;
+                    return true;
+                }
+            }
+            return false;
+        }
+
         public bool CanCraft(Recipe r)
         {
             if (r == null) return false;

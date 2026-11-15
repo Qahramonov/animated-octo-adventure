@@ -7,7 +7,7 @@ namespace Survival.Networking
     /// </summary>
     public static class NetProtocol
     {
-        public const int Version = 3;
+        public const int Version = 4;
         public const string AppKey = "OROL-SURVIVAL";
         public const int DefaultPort = 7777;
         public const int DefaultStatusPort = 8080;
@@ -43,6 +43,8 @@ namespace Survival.Networking
         ClientAttack = 10,
         ClientPlace = 11,
         ClientCook = 12,
+        ClientSplit = 13,
+        ClientDrop = 14,
 
         // server -> client
         Welcome = 64,

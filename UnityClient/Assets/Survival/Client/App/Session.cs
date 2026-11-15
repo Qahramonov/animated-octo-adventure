@@ -89,6 +89,8 @@ namespace Survival.Client
         public void SendAttack(uint entityId) => _client?.SendAttack(entityId);
         public void SendPlace(int slot, float x, float z, float yaw) => _client?.SendPlace(slot, x, z, yaw);
         public void SendCook() => _client?.SendCook();
+        public void SendSplit(int slot) => _client?.SendSplit(slot);
+        public void SendDrop(int slot) => _client?.SendDrop(slot);
         public event Action<AttackResultMsg> AttackResult;
         public event Action<SessionPhase> PhaseChanged;
 

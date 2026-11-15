@@ -24,6 +24,15 @@ namespace Survival.Client.UI
         public static readonly Color Thirst = new Color(0.26f, 0.62f, 0.98f);
         public static readonly Color Stamina = new Color(0.95f, 0.90f, 0.40f);
 
+        // Survival HUD (0.5): charcoal glass, thin light borders, amber accent
+        public static readonly Color Glass = new Color(0.045f, 0.05f, 0.055f, 0.78f);
+        public static readonly Color GlassSoft = new Color(0.045f, 0.05f, 0.055f, 0.5f);
+        public static readonly Color Slot = new Color(0.09f, 0.10f, 0.11f, 0.86f);
+        public static readonly Color SlotEmpty = new Color(0.07f, 0.075f, 0.085f, 0.62f);
+        public static readonly Color Line = new Color(1f, 1f, 1f, 0.13f);
+        public static readonly Color Backdrop = new Color(0.035f, 0.04f, 0.045f, 0.96f);
+        public static readonly Color PanelSolid = new Color(0.075f, 0.082f, 0.09f, 1f);
+
         public static Color PingColor(int ms)
         {
             if (ms < 0) return Neutral;

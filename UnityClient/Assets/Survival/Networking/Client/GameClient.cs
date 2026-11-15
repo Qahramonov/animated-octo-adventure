@@ -315,6 +315,20 @@ namespace Survival.Networking
             SendReliable();
         }
 
+        public void SendSplit(int slot)
+        {
+            _writer.Reset();
+            ActionMsg2.WriteSlot(_writer, MsgId.ClientSplit, (byte)slot);
+            SendReliable();
+        }
+
+        public void SendDrop(int slot)
+        {
+            _writer.Reset();
+            ActionMsg2.WriteSlot(_writer, MsgId.ClientDrop, (byte)slot);
+            SendReliable();
+        }
+
         public void SendChat(string text)
         {
             if (_peer == null || string.IsNullOrWhiteSpace(text)) return;

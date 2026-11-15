@@ -68,49 +68,66 @@ namespace Survival.Client.Game
 
             Controls = MobileControls.Create(_safe);
 
-            // Vitals (top-left)
+            // Vitals (top-left): compact glass card, pictogram + slim bar + value, stamina as a thin line below
             var vit = UIFactory.Rect(_safe, "Vitals");
-            UIFactory.Place(vit, new Vector2(0, 1), new Vector2(460, 200), new Vector2(30, -26), new Vector2(0, 1));
-            Image panel = UIFactory.Panel(vit, "Bg", new Color(0.04f, 0.05f, 0.07f, 0.55f), 18);
+            UIFactory.Place(vit, new Vector2(0, 1), new Vector2(348, 148), new Vector2(28, -24), new Vector2(0, 1));
+            Image panel = UIFactory.Image(vit, "Bg", Theme.Glass, UISprites.Rounded(16));
             UIFactory.Stretch(panel.rectTransform);
             panel.raycastTarget = false;
-            _health = Vital(vit, "H", Theme.Health, 0, out _healthV);
-            _hunger = Vital(vit, "F", Theme.Hunger, 1, out _hungerV);
-            _thirst = Vital(vit, "W", Theme.Thirst, 2, out _thirstV);
-            _stamina = Vital(vit, "S", Theme.Stamina, 3, out _);
+            Image vborder = UIFactory.Image(vit, "Border", Theme.Line, UISprites.Rounded(16, 2));
+            UIFactory.Stretch(vborder.rectTransform);
+            _health = Vital(vit, "health", Theme.Health, 0, out _healthV);
+            _hunger = Vital(vit, "food", Theme.Hunger, 1, out _hungerV);
+            _thirst = Vital(vit, "water", Theme.Thirst, 2, out _thirstV);
+            _stamina = UIFactory.Bar(vit, "Stamina", Theme.Stamina, new Vector2(312, 8));
+            UIFactory.Place((RectTransform)_stamina.transform.parent, new Vector2(0, 0), new Vector2(312, 8), new Vector2(18, 12), new Vector2(0, 0));
 
-            // Compass (top-centre)
+            // Compass (top-centre): slim strip with a centre marker
             var compass = UIFactory.Rect(_safe, "Compass");
-            UIFactory.Place(compass, new Vector2(0.5f, 1), new Vector2(620, 54), new Vector2(0, -24), new Vector2(0.5f, 1));
+            UIFactory.Place(compass, new Vector2(0.5f, 1), new Vector2(520, 40), new Vector2(0, -22), new Vector2(0.5f, 1));
             compass.gameObject.AddComponent<RectMask2D>();
-            Image cbg = UIFactory.Image(compass, "Bg", new Color(0, 0, 0, 0.35f), UISprites.Rounded(14));
+            Image cbg = UIFactory.Image(compass, "Bg", Theme.GlassSoft, UISprites.Rounded(12));
             UIFactory.Stretch(cbg.rectTransform);
             _compassStrip = UIFactory.Rect(compass, "Strip");
             _compassStrip.anchorMin = _compassStrip.anchorMax = new Vector2(0.5f, 0.5f);
-            _compassStrip.sizeDelta = new Vector2(3600, 54);
+            _compassStrip.sizeDelta = new Vector2(3600, 40);
             string[] dirs = { "N", "NE", "E", "SE", "S", "SW", "W", "NW" };
             for (int rep = -1; rep <= 1; rep++)
             {
-                for (int i = 0; i < 8; i++)
+                for (int i = 0; i < 24; i++)
                 {
-                    Text t = UIFactory.Label(_compassStrip, dirs[i], dirs[i], i % 2 == 0 ? 30 : 22, i == 0 ? Theme.Accent : Theme.Text, TextAnchor.MiddleCenter, UIFactory.Bold);
-                    t.rectTransform.anchorMin = t.rectTransform.anchorMax = new Vector2(0.5f, 0.5f);
-                    t.rectTransform.sizeDelta = new Vector2(80, 50);
-                    t.rectTransform.anchoredPosition = new Vector2((rep * 360 + i * 45) * 4f, 0);
+                    float x = (rep * 360 + i * 15) * 4f;
+                    if (i % 3 == 0)
+                    {
+                        int d = i / 3;
+                        Text t = UIFactory.Label(_compassStrip, dirs[d], dirs[d], d % 2 == 0 ? 24 : 17, d == 0 ? Theme.Accent : d % 2 == 0 ? Theme.Text : Theme.TextDim, TextAnchor.MiddleCenter, UIFactory.Bold);
+                        t.rectTransform.anchorMin = t.rectTransform.anchorMax = new Vector2(0.5f, 0.5f);
+                        t.rectTransform.sizeDelta = new Vector2(70, 36);
+                        t.rectTransform.anchoredPosition = new Vector2(x, 1);
+                    }
+                    else
+                    {
+                        Image mark = UIFactory.Image(_compassStrip, "Mark", new Color(1, 1, 1, 0.28f));
+                        mark.rectTransform.anchorMin = mark.rectTransform.anchorMax = new Vector2(0.5f, 0.5f);
+                        mark.rectTransform.sizeDelta = new Vector2(2, 10);
+                        mark.rectTransform.anchoredPosition = new Vector2(x, 0);
+                    }
                 }
             }
             Image tick = UIFactory.Image(compass, "Tick", Theme.Accent, UISprites.Rounded(2));
-            UIFactory.Place(tick.rectTransform, new Vector2(0.5f, 0), new Vector2(4, 14), Vector2.zero, new Vector2(0.5f, 0));
+            UIFactory.Place(tick.rectTransform, new Vector2(0.5f, 0), new Vector2(3, 9), Vector2.zero, new Vector2(0.5f, 0));
 
             // Crosshair
-            Image cross = UIFactory.Image(_canvas.transform, "Crosshair", new Color(1, 1, 1, 0.8f), UISprites.Circle(32));
-            UIFactory.Place(cross.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(8, 8));
+            Image cross = UIFactory.Image(_canvas.transform, "Crosshair", new Color(1, 1, 1, 0.9f), UISprites.Circle(32));
+            UIFactory.Place(cross.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(5, 5));
+            Image crossRing = UIFactory.Image(_canvas.transform, "CrosshairRing", new Color(1, 1, 1, 0.35f), UISprites.Ring(64, 0.12f));
+            UIFactory.Place(crossRing.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(26, 26));
 
             // Info (top-right under the menu button)
-            _info = UIFactory.Label(_safe, "Info", "", 22, Theme.TextDim, TextAnchor.UpperRight);
-            UIFactory.Place(_info.rectTransform, new Vector2(1, 1), new Vector2(560, 120), new Vector2(-30, -150), new Vector2(1, 1));
-            _modeBanner = UIFactory.Label(_safe, "Mode", "", 24, Theme.Warn, TextAnchor.UpperCenter, UIFactory.Bold);
-            UIFactory.Place(_modeBanner.rectTransform, new Vector2(0.5f, 1), new Vector2(1100, 40), new Vector2(0, -88), new Vector2(0.5f, 1));
+            _info = UIFactory.Label(_safe, "Info", "", 19, Theme.TextDim, TextAnchor.UpperRight);
+            UIFactory.Place(_info.rectTransform, new Vector2(1, 1), new Vector2(560, 120), new Vector2(-30, -128), new Vector2(1, 1));
+            _modeBanner = UIFactory.Label(_safe, "Mode", "", 18, Theme.Warn.WithAlpha(0.8f), TextAnchor.UpperCenter);
+            UIFactory.Place(_modeBanner.rectTransform, new Vector2(0.5f, 1), new Vector2(1100, 30), new Vector2(0, -68), new Vector2(0.5f, 1));
 
             _toaster = Toaster.Create(_safe);
             ((RectTransform)_toaster.transform).anchoredPosition = new Vector2(0, -140);
@@ -123,16 +140,13 @@ namespace Survival.Client.Game
 
         private Image Vital(RectTransform parent, string icon, Color c, int row, out Text value)
         {
-            float y = -24 - row * 42;
-            // Icons are procedural (coloured disc + letter) so no symbol glyphs are needed from the font
-            Image dot = UIFactory.Image(parent, "Icon" + row, c, UISprites.Circle(64));
-            UIFactory.Place(dot.rectTransform, new Vector2(0, 1), new Vector2(30, 30), new Vector2(22, y - 3), new Vector2(0, 1));
-            Text i = UIFactory.Label(dot.transform, "L", icon, 18, new Color(0.05f, 0.05f, 0.07f), TextAnchor.MiddleCenter, UIFactory.Bold);
-            UIFactory.Stretch(i.rectTransform);
-            Image fill = UIFactory.Bar(parent, "Bar" + row, c, new Vector2(330, 20));
-            UIFactory.Place((RectTransform)fill.transform.parent, new Vector2(0, 1), new Vector2(330, 20), new Vector2(62, y - 8), new Vector2(0, 1));
-            value = UIFactory.Label(parent, "V" + row, "", 22, Theme.Text, TextAnchor.MiddleLeft, UIFactory.Bold);
-            UIFactory.Place(value.rectTransform, new Vector2(0, 1), new Vector2(60, 36), new Vector2(400, y), new Vector2(0, 1));
+            float y = -16 - row * 38;
+            Image pic = UIFactory.Image(parent, "Icon" + row, c, UISprites.Icon(icon, 64));
+            UIFactory.Place(pic.rectTransform, new Vector2(0, 1), new Vector2(26, 26), new Vector2(18, y), new Vector2(0, 1));
+            Image fill = UIFactory.Bar(parent, "Bar" + row, c, new Vector2(214, 14));
+            UIFactory.Place((RectTransform)fill.transform.parent, new Vector2(0, 1), new Vector2(214, 14), new Vector2(56, y - 6), new Vector2(0, 1));
+            value = UIFactory.Label(parent, "V" + row, "", 22, Theme.Text, TextAnchor.MiddleRight, UIFactory.Bold);
+            UIFactory.Place(value.rectTransform, new Vector2(0, 1), new Vector2(52, 30), new Vector2(278, y + 2), new Vector2(0, 1));
             return fill;
         }
 

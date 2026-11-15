@@ -660,6 +660,20 @@ namespace Survival.Server
                     case MsgId.ClientCook:
                         HandleCook(s);
                         break;
+                    case MsgId.ClientSplit:
+                        if (CanAct(s) && s.Entity.Items.Split(reader.GetByte())) SendInventory(s);
+                        break;
+                    case MsgId.ClientDrop:
+                    {
+                        // Discards the whole stack (ground loot arrives with the container/loot update)
+                        byte slot = reader.GetByte();
+                        if (CanAct(s) && slot < Inventory.Size && !s.Entity.Items.Slots[slot].IsEmpty)
+                        {
+                            s.Entity.Items.Slots[slot] = default;
+                            SendInventory(s);
+                        }
+                        break;
+                    }
                     case MsgId.ClientChat:
                         ChatMsg chat = ChatMsg.Read(reader);
                         string text = chat.Text?.Trim();

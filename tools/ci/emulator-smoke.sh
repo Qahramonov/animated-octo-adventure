@@ -36,8 +36,11 @@ echo "screen ${W}x${H}; island pid=$(adb shell pidof "$PKG" | tr -d '\r')"
 # hold the HIT button for 3 s (swing animation), then open the bag
 adb shell input swipe $((W*91/100)) $((H*54/100)) $((W*91/100)) $((H*54/100)) 3000 &
 sleep 1.5; adb exec-out screencap -p > "$OUT/island_2_swing.png" || true; wait
-adb shell input tap $((W*88/100)) $((H*7/100)); sleep 2
+adb shell input tap $((W*905/1000)) $((H*75/1000)); sleep 2
+adb shell input tap $((W*12/100)) $((H*42/100)); sleep 1          # select an item in the backpack
 adb exec-out screencap -p > "$OUT/island_3_bag.png" || true
+adb shell input tap $((W*265/1000)) $((H*56/1000)); sleep 1.5      # crafting tab
+adb exec-out screencap -p > "$OUT/island_3b_craft.png" || true
 adb shell input tap $((W*955/1000)) $((H*65/1000)); sleep 1   # close with the X button
 # walk forward for 6 s (joystick up), then look again
 adb shell input swipe $((W*14/100)) $((H*76/100)) $((W*14/100)) $((H*56/100)) 6000; sleep 1
@@ -52,7 +55,7 @@ echo "===== Errors ====="
 grep -nE "Exception|Error|FATAL|SIGSEGV|SIGABRT" "$OUT/logcat-unity.txt" | head -n 120 || true
 # Small inline previews (readable from the job log without downloading artifacts)
 python3 -m pip install --quiet pillow >/dev/null 2>&1 || true
-for f in "$OUT"/screen_45s.png "$OUT"/island_1.png "$OUT"/island_2_swing.png "$OUT"/island_3_bag.png "$OUT"/island_4_walk.png; do
+for f in "$OUT"/screen_45s.png "$OUT"/island_1.png "$OUT"/island_2_swing.png "$OUT"/island_3_bag.png "$OUT"/island_3b_craft.png "$OUT"/island_4_walk.png; do
   [ -s "$f" ] || continue
   python3 - "$f" <<'PY' || true
 import base64, io, sys

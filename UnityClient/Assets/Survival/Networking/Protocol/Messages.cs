@@ -711,5 +711,11 @@ namespace Survival.Networking
         }
 
         public static void WriteCook(NetDataWriter w) => w.Put((byte)MsgId.ClientCook);
+
+        public static void WriteSlot(NetDataWriter w, MsgId id, byte slot)
+        {
+            w.Put((byte)id);
+            w.Put(slot);
+        }
     }
 }
