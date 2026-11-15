@@ -1,0 +1,76 @@
+Assets in this folder come from Poly Haven (https://polyhaven.com) and are licensed CC0 1.0 (public domain).
+Downloaded by tools/assets/fetch_polyhaven.py from tools/assets/manifest.json.
+
+ok texture leafy_grass diff 1167 KB
+ok texture leafy_grass nor 1431 KB
+ok texture leafy_grass arm 986 KB
+ok texture sparse_grass diff 933 KB
+ok texture sparse_grass nor 1406 KB
+ok texture sparse_grass arm 955 KB
+ok texture aerial_grass_rock diff 651 KB
+ok texture aerial_grass_rock nor 883 KB
+ok texture aerial_grass_rock arm 211 KB
+ok texture forrest_ground_01 diff 814 KB
+ok texture forrest_ground_01 nor 1395 KB
+ok texture forrest_ground_01 arm 290 KB
+ok texture rock_boulder_dry diff 839 KB
+ok texture rock_boulder_dry nor 783 KB
+ok texture rock_boulder_dry arm 766 KB
+ok texture aerial_beach_01 diff 112 KB
+ok texture aerial_beach_01 nor 256 KB
+ok texture aerial_beach_01 arm 185 KB
+ok texture sand_01 diff 473 KB
+ok texture sand_01 nor 857 KB
+ok texture sand_01 arm 128 KB
+ok texture bark_brown_02 diff 644 KB
+ok texture bark_brown_02 nor 991 KB
+ok texture bark_brown_02 arm 227 KB
+ok texture snow_02 diff 317 KB
+ok texture snow_02 nor 1056 KB
+ok texture snow_02 arm 86 KB
+ok texture rocky_terrain_02 diff 823 KB
+ok texture rocky_terrain_02 nor 970 KB
+ok texture rocky_terrain_02 arm 512 KB
+ok texture bark_brown_01 diff 712 KB
+ok texture bark_brown_01 nor 1197 KB
+ok texture bark_brown_01 arm 230 KB
+ok texture bark_willow diff 761 KB
+ok texture bark_willow nor 1404 KB
+ok texture bark_willow arm 956 KB
+ok texture tree_bark_03 diff 1021 KB
+ok texture tree_bark_03 nor 1226 KB
+ok texture tree_bark_03 arm 838 KB
+ok model boulder_01 5636 KB
+ok model namaqualand_boulder_02 5018 KB
+ok model namaqualand_boulder_03 3690 KB
+ok model namaqualand_boulder_05 4589 KB
+ok model hatchet 1921 KB
+ok model picke_dirty_01 2183 KB
+ok model old_military_crate 2436 KB
+ok model Barrel_01 676 KB
+ok model medical_box 1929 KB
+ok model fish_knife 2505 KB
+ok model bolt_action_rifle_7_62 5899 KB
+ok model service_pistol 3220 KB
+ok model dead_tree_trunk_02 4791 KB
+ok model fern_02 1119 KB
+ok model ammo_box 1438 KB
+ok model metal_jerrycan 2963 KB
+ok model pastic_torch_6v 1561 KB
+ok model crowbar_01 1551 KB
+ok model WoodenTable_01 541 KB
+ok model cross_pein_hammer 1473 KB
+   maps of fir_tree_01: bark_ao, bark_arm, bark_diff, bark_disp, bark_nor_dx, bark_nor_gl, bark_rough, trunk_a_ao, trunk_a_arm, trunk_a_diff, trunk_a_nor_dx, trunk_a_nor_gl, trunk_a_rough, trunk_b_ao, trunk_b_arm, trunk_b_diff, trunk_b_nor_dx, trunk_b_nor_gl, trunk_b_rough, trunk_c_ao, trunk_c_arm, trunk_c_diff, trunk_c_nor_dx, trunk_c_nor_gl, trunk_c_rough, twig_alpha, twig_ao, twig_arm, twig_diff, twig_mask, twig_nor_dx, twig_nor_gl, twig_rough
+ok model fir_tree_01 13737 KB
+   maps of pine_tree_01: bark_ao, bark_arm, bark_diff, bark_disp, bark_nor_dx, bark_nor_gl, bark_rough, trunk_a_ao, trunk_a_arm, trunk_a_diff, trunk_a_nor_dx, trunk_a_nor_gl, trunk_a_rough, trunk_b_ao, trunk_b_arm, trunk_b_diff, trunk_b_nor_dx, trunk_b_nor_gl, trunk_b_rough, trunk_c_ao, trunk_c_arm, trunk_c_diff, trunk_c_nor_dx, trunk_c_nor_gl, trunk_c_rough, twig_alpha, twig_ao, twig_arm, twig_diff, twig_disp, twig_mask, twig_nor_dx, twig_nor_gl, twig_rough
+ok model pine_tree_01 12749 KB
+   maps of island_tree_01: AO, Diffuse, Displacement, Rough, arm, branches_ao, branches_arm, branches_diff, branches_disp, branches_nor_dx, branches_nor_gl, branches_rough, leaves_alpha, leaves_ao, leaves_arm, leaves_diff, leaves_disp, leaves_nor_dx, leaves_nor_gl, leaves_rough, nor_dx, nor_gl
+ok model island_tree_01 17344 KB
+   maps of jacaranda_tree: branches_ao, branches_arm, branches_diff, branches_disp, branches_nor_dx, branches_nor_gl, branches_rough, leaves_alpha, leaves_ao, leaves_arm, leaves_diff, leaves_disp, leaves_nor_dx, leaves_nor_gl, leaves_rough, trunk_ao, trunk_arm, trunk_diff, trunk_disp, trunk_nor_dx, trunk_nor_gl, trunk_rough
+ok model jacaranda_tree 14058 KB
+   maps of fir_sapling_medium: branches_ao, branches_arm, branches_diff, branches_disp, branches_nor_dx, branches_nor_gl, branches_rough, twigs_alpha, twigs_ao, twigs_arm, twigs_diff, twigs_mask, twigs_nor_dx, twigs_nor_gl, twigs_rough
+ok model fir_sapling_medium 12748 KB
+   maps of grass_medium_01: AO, Alpha, Diffuse, Rough, arm, dry_diff, nor_dx, nor_gl
+ok model grass_medium_01 4909 KB
+   maps of pine_sapling_small: bark_ao, bark_arm, bark_diff, bark_disp, bark_nor_dx, bark_nor_gl, bark_rough, twig_alpha, twig_ao, twig_arm, twig_diff, twig_disp, twig_mask, twig_nor_dx, twig_nor_gl, twig_rough
+ok model pine_sapling_small 6742 KB
