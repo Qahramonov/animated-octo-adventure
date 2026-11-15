@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Text;
 using System.Threading.Tasks;
+using Survival.Core;
+using Survival.Gameplay;
 using Survival.Networking;
 
 namespace Survival.Server
@@ -36,6 +38,15 @@ namespace Survival.Server
             }
         }
 
+        private PlayerSession FindSession(string name)
+        {
+            foreach (PlayerSession s in _sessionList)
+            {
+                if (string.Equals(s.Nickname, name, StringComparison.OrdinalIgnoreCase)) return s;
+            }
+            return _sessionList.Count == 1 && name == "*" ? _sessionList[0] : null;
+        }
+
         /// <summary>Executes a command immediately (server thread only).</summary>
         public string ExecuteCommand(string line)
         {
@@ -47,7 +58,7 @@ namespace Survival.Server
             switch (cmd)
             {
                 case "help":
-                    return "commands: status | players | bots <count> | kick <name> | say <text> | save | time <0..1> | config";
+                    return "commands: status | players | bots <count> | kick <name> | say <text> | save | time <0..1> | config | give <player> <item> [count] | spawn <deer|boar|wolf|campfire> <player> [distance]";
                 case "status":
                     ServerStatus st = _status;
                     return $"{st.Name} | players {ConnectedPlayerCount()}/{Config.MaxPlayers} | bots {_bots.Count} (near players {_bots.FullSimCount}) | " +
@@ -102,6 +113,37 @@ namespace Survival.Server
                 case "config":
                     return $"name={Config.ServerName} region={Config.Region} port={Config.Port} maxPlayers={Config.MaxPlayers} bots={Config.BotCount} " +
                            $"tickRate={Config.TickRate} seed={Config.WorldSeed} size={Config.WorldSize} interest={Config.InterestRadius}";
+                case "give":
+                {
+                    // give <player> <item> [count]
+                    string[] a = arg.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+                    if (a.Length < 2 || !Enum.TryParse(a[1], true, out ItemId item) || ItemDb.Get(item) == null) return "usage: give <player> <item> [count]";
+                    int count = a.Length > 2 && int.TryParse(a[2], out int c) ? Math.Max(1, c) : 1;
+                    PlayerSession ps = FindSession(a[0]);
+                    if (ps?.Entity?.Items == null) return "player not found: " + a[0];
+                    int lost = ps.Entity.Items.Add(item, count);
+                    SendInventory(ps);
+                    return $"gave {count - lost} x {item} to {ps.Nickname}";
+                }
+                case "spawn":
+                {
+                    // spawn <deer|boar|wolf|campfire> <player> [distance]
+                    string[] a = arg.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+                    PlayerSession ps = a.Length > 1 ? FindSession(a[1]) : null;
+                    if (ps?.Entity == null) return "usage: spawn <deer|boar|wolf|campfire> <player> [distance]";
+                    float dist = a.Length > 2 && float.TryParse(a[2], NumberStyles.Float, CultureInfo.InvariantCulture, out float d) ? d : 6f;
+                    System.Numerics.Vector3 pos = ps.Entity.Move.Position + SMath.YawForward(ps.Entity.Yaw) * dist;
+                    if (string.Equals(a[0], "campfire", StringComparison.OrdinalIgnoreCase))
+                    {
+                        ServerEntity fire = CreateEntity(EntityType.Structure, string.Empty, pos, ps.Entity.Yaw);
+                        fire.SubType = (byte)StructureKind.Campfire;
+                        _structures.Add(fire);
+                        return "campfire placed";
+                    }
+                    if (!Enum.TryParse(a[0], true, out AnimalKind kind)) return "unknown kind: " + a[0];
+                    SpawnAnimal(kind, pos);
+                    return "spawned " + kind;
+                }
                 default:
                     return "unknown command, type 'help'";
             }

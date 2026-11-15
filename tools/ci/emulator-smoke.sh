@@ -28,7 +28,7 @@ adb exec-out screencap -p > "$OUT/screen_after_tap.png" || true
 # ---- second run: straight into offline practice (island, HUD, inventory, gathering) ----
 adb shell am force-stop "$PKG"; sleep 2
 adb shell am start -W -n "$PKG/com.unity3d.player.UnityPlayerActivity" -e unity "-force-gles" -e orol_auto offline || true
-sleep 75
+sleep 85
 adb exec-out screencap -p > "$OUT/island_1.png" || true
 size=$(adb shell wm size | tr -d '\r' | sed 's/.*: //'); W=${size%x*}; H=${size#*x}
 if [ "$W" -lt "$H" ]; then T=$W; W=$H; H=$T; fi

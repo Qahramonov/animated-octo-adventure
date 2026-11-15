@@ -11,6 +11,7 @@ namespace Survival.Client.Game
     {
         private ClientSimulation _sim;
         private Material _material;
+        private Material _props;
         private Transform _camera;
         private readonly List<RemoteEntity> _scratch = new List<RemoteEntity>(128);
 
@@ -21,6 +22,7 @@ namespace Survival.Client.Game
             v._sim = sim;
             v._camera = camera;
             v._material = App.Materials.Lit("character", Color.white, 0.05f, 0.25f);
+            v._props = App.Materials.Lit("props", Color.white, 0.03f, 0f);
             sim.RemoteAdded += v.OnAdded;
             sim.RemoteRemoved += v.OnRemoved;
             foreach (RemoteEntity e in sim.Remotes.Values) v.OnAdded(e);
@@ -36,6 +38,20 @@ namespace Survival.Client.Game
 
         private void OnAdded(RemoteEntity e)
         {
+            if (e.Type == EntityType.Animal)
+            {
+                AnimalView a = AnimalView.Create(transform, (AnimalKind)e.SubType, _material);
+                a.transform.position = new Vector3(e.Position.X, e.Position.Y, e.Position.Z);
+                e.View = a;
+                return;
+            }
+            if (e.Type == EntityType.Structure)
+            {
+                CampfireView c = CampfireView.Create(transform, _props);
+                c.transform.SetPositionAndRotation(new Vector3(e.Position.X, e.Position.Y, e.Position.Z), Quaternion.Euler(0, e.Yaw, 0));
+                e.View = c;
+                return;
+            }
             if (e.Type != EntityType.Player && e.Type != EntityType.Bot) return;
             bool bot = e.Type == EntityType.Bot;
             HumanoidView view = HumanoidView.Create(transform, (bot ? "Bot " : "Player ") + e.Name,
@@ -46,7 +62,7 @@ namespace Survival.Client.Game
 
         private void OnRemoved(RemoteEntity e)
         {
-            if (e.View is HumanoidView v && v != null) Destroy(v.gameObject);
+            if (e.View is MonoBehaviour v && v != null) Destroy(v.gameObject);
             e.View = null;
         }
 
@@ -55,8 +71,16 @@ namespace Survival.Client.Game
             Vector3 cam = _camera != null ? _camera.position : Vector3.zero;
             foreach (RemoteEntity e in _sim.Remotes.Values)
             {
-                if (!(e.View is HumanoidView v) || v == null) continue;
                 var pos = new Vector3(e.Position.X, e.Position.Y, e.Position.Z);
+                if (e.View is AnimalView av && av != null)
+                {
+                    av.transform.SetPositionAndRotation(pos, Quaternion.Euler(0, e.Yaw, 0));
+                    av.Speed = e.Speed;
+                    bool close = (pos - cam).sqrMagnitude < 110f * 110f;
+                    if (av.enabled != close) av.enabled = close;
+                    continue;
+                }
+                if (!(e.View is HumanoidView v) || v == null) continue;
                 Transform t = v.transform;
                 t.position = pos;
                 t.rotation = Quaternion.Euler(0, e.Yaw, 0);

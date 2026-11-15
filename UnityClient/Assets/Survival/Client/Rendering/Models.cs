@@ -176,6 +176,54 @@ namespace Survival.Client.Rendering
                     B.Cylinder(Vector3.zero, 0.4f, 0.06f, 0.06f, 6, MeshBuilder.Rgb(0.36f, 0.25f, 0.15f), true, true, MeshBuilder.Rgb(0.78f, 0.64f, 0.42f));
                     B.Transform = Matrix4x4.identity;
                     break;
+                case Survival.Gameplay.ItemId.Fiber:
+                    for (int i = 0; i < 6; i++)
+                    {
+                        float a = i * 1.05f;
+                        Vector3 baseP = new Vector3(Mathf.Cos(a) * 0.03f, -0.08f, 0.1f + Mathf.Sin(a) * 0.03f);
+                        Vector3 tip = baseP + new Vector3(Mathf.Cos(a) * 0.09f, 0.22f + (i % 2) * 0.05f, Mathf.Sin(a) * 0.09f);
+                        Vector3 side = new Vector3(-Mathf.Sin(a), 0, Mathf.Cos(a)) * 0.022f;
+                        Color32 g = MeshBuilder.Rgb(0.36f + i * 0.02f, 0.62f + i * 0.02f, 0.26f);
+                        B.Tri(baseP - side, tip, baseP + side, g);
+                        B.Tri(baseP + side, tip, baseP - side, g);
+                    }
+                    B.Box(new Vector3(0, -0.06f, 0.1f), new Vector3(0.09f, 0.03f, 0.09f), cord);
+                    break;
+                case Survival.Gameplay.ItemId.RawMeat:
+                case Survival.Gameplay.ItemId.CookedMeat:
+                {
+                    bool cooked = id == Survival.Gameplay.ItemId.CookedMeat;
+                    Color32 meat = cooked ? MeshBuilder.Rgb(0.52f, 0.30f, 0.16f) : MeshBuilder.Rgb(0.82f, 0.28f, 0.30f);
+                    B.Blob(new Vector3(0, 0, 0.12f), new Vector3(0.11f, 0.07f, 0.13f), meat, 0, 0.2f, 9, 0.1f);
+                    B.Blob(new Vector3(0.03f, 0.03f, 0.1f), new Vector3(0.05f, 0.03f, 0.06f), cooked ? MeshBuilder.Rgb(0.36f, 0.2f, 0.1f) : MeshBuilder.Rgb(0.95f, 0.75f, 0.72f));
+                    B.Transform = Matrix4x4.TRS(new Vector3(0, 0, -0.02f), Quaternion.Euler(90, 0, 0), Vector3.one);
+                    B.Cylinder(Vector3.zero, 0.12f, 0.018f, 0.018f, 5, MeshBuilder.Rgb(0.93f, 0.9f, 0.82f), true, true);
+                    B.Transform = Matrix4x4.identity;
+                    break;
+                }
+                case Survival.Gameplay.ItemId.Hide:
+                    B.Box(new Vector3(0, 0, 0.1f), new Vector3(0.24f, 0.025f, 0.2f), MeshBuilder.Rgb(0.55f, 0.38f, 0.22f), 0.8f);
+                    B.Box(new Vector3(0, 0.016f, 0.1f), new Vector3(0.15f, 0.01f, 0.12f), MeshBuilder.Rgb(0.72f, 0.55f, 0.36f));
+                    break;
+                case Survival.Gameplay.ItemId.Bone:
+                    B.Transform = Matrix4x4.TRS(new Vector3(0, 0, -0.04f), Quaternion.Euler(90, 0, 0), Vector3.one);
+                    B.Cylinder(Vector3.zero, 0.28f, 0.02f, 0.02f, 5, MeshBuilder.Rgb(0.93f, 0.9f, 0.82f), true, true);
+                    B.Transform = Matrix4x4.identity;
+                    B.Blob(new Vector3(0, 0, -0.04f), Vector3.one * 0.04f, MeshBuilder.Rgb(0.9f, 0.87f, 0.78f));
+                    B.Blob(new Vector3(0, 0, 0.24f), Vector3.one * 0.04f, MeshBuilder.Rgb(0.9f, 0.87f, 0.78f));
+                    break;
+                case Survival.Gameplay.ItemId.Campfire:
+                    B.Transform = Matrix4x4.TRS(new Vector3(0, -0.08f, 0.12f), Quaternion.identity, Vector3.one * 0.32f);
+                    for (int i = 0; i < 6; i++)
+                    {
+                        float a = i * Mathf.PI / 3f;
+                        B.Blob(new Vector3(Mathf.Cos(a) * 0.5f, 0.08f, Mathf.Sin(a) * 0.5f), new Vector3(0.17f, 0.12f, 0.15f), stone, 0, 0.25f, 60 + i, 0.1f);
+                    }
+                    B.Cylinder(new Vector3(0, 0.05f, 0), 0.55f, 0.2f, 0f, 6, MeshBuilder.Rgb(1f, 0.45f, 0.1f), false, false, MeshBuilder.Rgb(1f, 0.88f, 0.35f));
+                    B.Box(new Vector3(0, 0.05f, 0), new Vector3(0.7f, 0.1f, 0.12f), wood);
+                    B.Box(new Vector3(0, 0.05f, 0), new Vector3(0.12f, 0.1f, 0.7f), wood);
+                    B.Transform = Matrix4x4.identity;
+                    break;
                 default: // rock and any other resource: a fist-sized stone
                     B.Blob(new Vector3(0, 0, 0.1f), new Vector3(0.1f, 0.075f, 0.12f), id == Survival.Gameplay.ItemId.SulfurOre ? MeshBuilder.Rgb(0.85f, 0.76f, 0.2f)
                         : id == Survival.Gameplay.ItemId.MetalOre ? MeshBuilder.Rgb(0.62f, 0.42f, 0.32f) : stone, 0, 0.25f, 3, 0.1f);

@@ -85,6 +85,26 @@ namespace Survival.Client
             yield return new WaitForSecondsRealtime(3f);
             Debug.Log("[App] Auto-start: offline practice");
             Session?.StartLocal(false);
+            // Stage a small scene for the screenshots: noon, tools, food, a campfire and wildlife ahead
+            float wait = 0f;
+            while (Session != null && Session.Phase != SessionPhase.Playing && wait < 90f)
+            {
+                wait += Time.unscaledDeltaTime;
+                yield return null;
+            }
+            yield return new WaitForSecondsRealtime(4f);
+            var local = Session?.LocalServer;
+            if (local == null) yield break;
+            foreach (string cmd in new[]
+            {
+                "time 0.5", "give * StoneHatchet", "give * StonePickaxe", "give * Spear", "give * Campfire 2", "give * Wood 240",
+                "give * Stone 150", "give * MetalOre 60", "give * SulfurOre 40", "give * Fiber 80", "give * Berries 12", "give * RawMeat 5",
+                "give * CookedMeat 3", "give * Hide 4", "give * Bone 6", "spawn campfire * 3", "spawn boar * 8", "spawn deer * 17", "spawn wolf * 30",
+            })
+            {
+                local.EnqueueCommand(cmd);
+            }
+            Debug.Log("[App] Auto-start: test scene staged");
         }
 
         /// <summary>String extra of the Android launch intent (empty elsewhere). Used by the CI smoke test.</summary>

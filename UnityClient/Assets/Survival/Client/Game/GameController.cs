@@ -61,6 +61,9 @@ namespace Survival.Client.Game
         private uint _pendingHit;
         private float _pendingHitDelay;
         private bool _hasTarget;
+        private RemoteEntity _entityTarget;
+        private uint _pendingAttack;
+        private float _lastHealth = 100f;
         private Survival.World.WorldNode _target;
         private readonly System.Collections.Generic.Dictionary<uint, byte> _nodeHealth = new System.Collections.Generic.Dictionary<uint, byte>();
         private readonly System.Collections.Generic.List<Survival.World.WorldNode> _nodeScratch = new System.Collections.Generic.List<Survival.World.WorldNode>(32);
@@ -114,7 +117,9 @@ namespace Survival.Client.Game
                 App.Audio.Play(SfxSound.Splash, 0.35f, 1.4f);
             };
             BuildToolView();
+            _ui.CookRequested = () => _session.SendCook();
             _session.HitResult += OnHitResult;
+            _session.AttackResult += OnAttackResult;
             _session.NodesChanged += OnNodesChanged;
             OnNodesChanged();
 
@@ -166,6 +171,7 @@ namespace Survival.Client.Game
             {
                 _session.Notice -= OnNotice;
                 _session.HitResult -= OnHitResult;
+                _session.AttackResult -= OnAttackResult;
                 _session.NodesChanged -= OnNodesChanged;
                 _session.Died -= OnDied;
                 _session.Respawned -= OnRespawned;
@@ -194,9 +200,9 @@ namespace Survival.Client.Game
         private void OnNotice(NoticeMsg n)
         {
             // Short server codes are localized on the client
-            if (n.Text == "craft_failed")
+            if (n.Text == "craft_failed" || n.Text == "place_failed")
             {
-                _ui.ShowMessage(Loc.T("craft_failed"), Theme.Bad);
+                _ui.ShowMessage(Loc.T(n.Text), Theme.Bad);
                 App.Audio.PlayUi(UiSound.Error);
                 return;
             }
@@ -425,6 +431,52 @@ namespace Survival.Client.Game
             _landKick = Mathf.Max(_landKick, 0.025f);
         }
 
+        private void OnAttackResult(AttackResultMsg a)
+        {
+            App.Audio.Play(SfxSound.Chop, 0.7f, Random.Range(0.75f, 0.9f));
+            _landKick = Mathf.Max(_landKick, 0.03f);
+            if (!a.Killed) return;
+            _ui.ShowGain(ItemId.RawMeat, a.Meat);
+            _ui.ShowGain(ItemId.Hide, a.Hide);
+            _ui.ShowGain(ItemId.Bone, a.Bone);
+            App.Audio.Play(SfxSound.Pickup, 0.8f);
+        }
+
+        /// <summary>Nearest animal / bot in front of the player within melee reach.</summary>
+        private RemoteEntity FindEntityTarget()
+        {
+            MoveState st = _sim.Predicted;
+            float yawRad = _yaw * Mathf.Deg2Rad;
+            float fx = Mathf.Sin(yawRad), fz = Mathf.Cos(yawRad);
+            RemoteEntity best = null;
+            float bestDist = CombatRules.MeleeReach;
+            foreach (RemoteEntity e in _sim.Remotes.Values)
+            {
+                if (e.Type != EntityType.Animal && e.Type != EntityType.Bot) continue;
+                if ((e.Flags & MoveFlags.Dead) != 0) continue;
+                float dx = e.Position.X - st.Position.X, dz = e.Position.Z - st.Position.Z;
+                float d = Mathf.Sqrt(dx * dx + dz * dz);
+                if (d > bestDist || Mathf.Abs(e.Position.Y - st.Position.Y) > 2.5f) continue;
+                if (d > 0.6f && (dx * fx + dz * fz) / d < 0.45f) continue;
+                bestDist = d;
+                best = e;
+            }
+            return best;
+        }
+
+        /// <summary>True when a placed campfire is close enough to cook on.</summary>
+        private bool CampfireNearby()
+        {
+            MoveState st = _sim.Predicted;
+            foreach (RemoteEntity e in _sim.Remotes.Values)
+            {
+                if (e.Type != EntityType.Structure) continue;
+                float dx = e.Position.X - st.Position.X, dz = e.Position.Z - st.Position.Z;
+                if (dx * dx + dz * dz <= CombatRules.CookReach * CombatRules.CookReach) return true;
+            }
+            return false;
+        }
+
         /// <summary>Nearest gatherable node the player is facing and can reach.</summary>
         private bool FindTarget(out Survival.World.WorldNode best)
         {
@@ -477,10 +529,31 @@ namespace Survival.Client.Game
                 _toolMesh.sharedMesh = show == ItemId.None ? null : Models.Tool(show);
             }
 
-            _hasTarget = playing && FindTarget(out _target);
+            // Animals and bots take priority over trees/rocks behind them
+            _entityTarget = playing ? FindEntityTarget() : null;
+            _hasTarget = playing && _entityTarget == null && FindTarget(out _target);
             float health01 = 1f;
             if (_hasTarget && _nodeHealth.TryGetValue(_target.Id, out byte hp)) health01 = hp / 255f;
-            _ui.SetTarget(_hasTarget && !blocked, _hasTarget ? _target.Kind : default, health01);
+            bool placeable = !held.IsEmpty && ItemDb.Get(held.Id) != null && ItemDb.Get(held.Id).Kind == ItemKind.Placeable;
+            if (_entityTarget != null)
+            {
+                string name = _entityTarget.Type == EntityType.Animal ? Loc.T("animal_" + _entityTarget.SubType) : _entityTarget.Name;
+                _ui.SetTarget(!blocked, name, _entityTarget.Health01);
+            }
+            else if (placeable && playing)
+            {
+                _ui.SetTarget(!blocked, Loc.T("place") + ": " + ItemVisuals.Name(held.Id), 1f);
+            }
+            else
+            {
+                _ui.SetTarget(_hasTarget && !blocked, _hasTarget ? ItemVisuals.NodeName(_target.Kind) : string.Empty, health01);
+            }
+            _ui.SetCookVisible(playing && !blocked && inv != null && inv.CountOf(ItemId.RawMeat) > 0 && CampfireNearby());
+
+            // Damage feedback
+            float healthNow = _sim.Stats.Health;
+            if (healthNow < _lastHealth - 1.5f && alive) App.Audio.Play(SfxSound.Hurt, 0.8f);
+            _lastHealth = healthNow;
             _ui.SetDrinkVisible(playing && !blocked && st.Position.Y < _session.World.Config.SeaLevel + 0.45f && _sim.Stats.Thirst < 95f);
 
             // Swing: hold the HIT button (or left mouse button while the cursor is captured)
@@ -495,19 +568,32 @@ namespace Survival.Client.Game
                 _swingCooldown = GatherRules.SwingSeconds;
                 _swing = 0f;
                 App.Audio.Play(SfxSound.Swing, 0.5f, Random.Range(0.9f, 1.1f));
-                if (_hasTarget)
+                _pendingHitDelay = GatherRules.SwingSeconds * 0.4f; // impact moment of the animation
+                if (_entityTarget != null)
+                {
+                    _pendingAttack = _entityTarget.Id;
+                }
+                else if (placeable)
+                {
+                    // Put the held structure on the ground 2 m ahead
+                    float yr = _yaw * Mathf.Deg2Rad;
+                    _session.SendPlace(_ui.SelectedHotbar, st.Position.X + Mathf.Sin(yr) * 2f, st.Position.Z + Mathf.Cos(yr) * 2f, _yaw);
+                    _swingCooldown = 0.8f;
+                }
+                else if (_hasTarget)
                 {
                     _pendingHit = _target.Id;
-                    _pendingHitDelay = GatherRules.SwingSeconds * 0.4f; // impact moment of the animation
                 }
             }
-            if (_pendingHit != 0)
+            if (_pendingHit != 0 || _pendingAttack != 0)
             {
                 _pendingHitDelay -= dt;
                 if (_pendingHitDelay <= 0f)
                 {
-                    _session.SendHit(_pendingHit);
+                    if (_pendingAttack != 0) _session.SendAttack(_pendingAttack);
+                    else _session.SendHit(_pendingHit);
                     _pendingHit = 0;
+                    _pendingAttack = 0;
                 }
             }
 

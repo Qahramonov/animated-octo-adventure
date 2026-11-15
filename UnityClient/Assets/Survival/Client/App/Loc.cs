@@ -127,6 +127,17 @@ namespace Survival.Client
             { "node_stone",         new[] { "Stone",                        "Tosh",                             "Камень" } },
             { "node_metal",         new[] { "Metal Ore",                    "Metall rudasi",                    "Металлическая руда" } },
             { "node_sulfur",        new[] { "Sulfur Ore",                   "Oltingugurt rudasi",               "Серная руда" } },
+            { "cook",               new[] { "COOK",                         "PISHIRISH",                        "ЖАРИТЬ" } },
+            { "place",              new[] { "PLACE",                        "QO'YISH",                          "ПОСТАВИТЬ" } },
+            { "place_failed",       new[] { "Cannot place here",            "Bu yerga qo'yib bo'lmaydi",        "Здесь нельзя поставить" } },
+            { "item_raw_meat",      new[] { "Raw Meat",                     "Xom go'sht",                       "Сырое мясо" } },
+            { "item_cooked_meat",   new[] { "Cooked Meat",                  "Pishgan go'sht",                   "Жареное мясо" } },
+            { "item_hide",          new[] { "Hide",                         "Teri",                             "Шкура" } },
+            { "item_bone",          new[] { "Bone",                         "Suyak",                            "Кость" } },
+            { "item_campfire",      new[] { "Campfire",                     "Gulxan",                           "Костёр" } },
+            { "animal_0",           new[] { "Deer",                         "Kiyik",                            "Олень" } },
+            { "animal_1",           new[] { "Boar",                         "Yovvoyi cho'chqa",                 "Кабан" } },
+            { "animal_2",           new[] { "Wolf",                         "Bo'ri",                            "Волк" } },
             { "world_mismatch",     new[] { "World data mismatch: update the game", "Dunyo ma'lumotlari mos emas: o'yinni yangilang", "Несовпадение мира: обновите игру" } },
         };
 

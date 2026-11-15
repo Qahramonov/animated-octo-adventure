@@ -84,6 +84,10 @@ namespace Survival.Client
         public void SendUseItem(int slot) => _client?.SendUseItem(slot);
         public void SendMoveItem(int from, int to) => _client?.SendMoveItem(from, to);
         public void SendDrink() => _client?.SendDrink();
+        public void SendAttack(uint entityId) => _client?.SendAttack(entityId);
+        public void SendPlace(int slot, float x, float z, float yaw) => _client?.SendPlace(slot, x, z, yaw);
+        public void SendCook() => _client?.SendCook();
+        public event Action<AttackResultMsg> AttackResult;
         public event Action<SessionPhase> PhaseChanged;
 
         public void ConnectOnline(ServerEntry entry)
@@ -167,6 +171,7 @@ namespace Survival.Client
             _client.ChatReceived += c => Chat?.Invoke(c);
             _client.InventoryReceived += () => InventoryChanged?.Invoke();
             _client.HitResultReceived += h => HitResult?.Invoke(h);
+            _client.AttackResultReceived += a => AttackResult?.Invoke(a);
             _client.NodeStateReceived += (reset, depleted, ids) =>
             {
                 if (reset) DepletedNodes.Clear();

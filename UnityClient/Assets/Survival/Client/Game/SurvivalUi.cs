@@ -65,6 +65,7 @@ namespace Survival.Client.Game
         public RectTransform Root;
         private Image _bg, _icon, _frame;
         private Text _code, _count;
+        private Sprite _tile;
 
         public static SlotView Create(Transform parent, string name, float size, Action onClick, string corner = null)
         {
@@ -107,7 +108,22 @@ namespace Survival.Client.Game
             _frame.enabled = selected;
             if (has)
             {
-                _icon.color = ItemVisuals.ColorOf(s.Id);
+                // Real picture of the item when it could be rendered, otherwise a coloured tile with letters
+                Sprite pic = Survival.Client.Rendering.IconBaker.Get(s.Id);
+                if (pic != null)
+                {
+                    if (_tile == null) _tile = _icon.sprite;
+                    _icon.sprite = pic;
+                    _icon.color = Color.white;
+                    _icon.rectTransform.sizeDelta = Root.sizeDelta * 0.82f;
+                    _code.enabled = false;
+                }
+                else
+                {
+                    if (_tile != null) _icon.sprite = _tile;
+                    _icon.rectTransform.sizeDelta = Root.sizeDelta * 0.56f;
+                    _icon.color = ItemVisuals.ColorOf(s.Id);
+                }
                 _code.text = ItemVisuals.Code(s.Id);
                 _count.text = s.Count > 1 ? s.Count.ToString() : string.Empty;
             }
@@ -146,6 +162,8 @@ namespace Survival.Client.Game
         public int SelectedHotbar { get; private set; }
         public bool InventoryOpen => _panel != null && _panel.activeSelf;
         public Action DrinkRequested;
+        public Action CookRequested;
+        private AnimatedButton _cook;
 
         public static SurvivalUi Create(RectTransform safe, Transform canvas, Session session)
         {
@@ -197,6 +215,9 @@ namespace Survival.Client.Game
             _drink = UIFactory.Button(root, "Drink", Loc.T("drink"), () => DrinkRequested?.Invoke(), 28, true, new Vector2(240, 76));
             UIFactory.Place(_drink.Background.rectTransform, new Vector2(0.5f, 0), new Vector2(240, 76), new Vector2(0, HotSize + 40), new Vector2(0.5f, 0));
             _drink.gameObject.SetActive(false);
+            _cook = UIFactory.Button(root, "Cook", Loc.T("cook"), () => CookRequested?.Invoke(), 28, true, new Vector2(240, 76));
+            UIFactory.Place(_cook.Background.rectTransform, new Vector2(0.5f, 0), new Vector2(240, 76), new Vector2(0, HotSize + 130), new Vector2(0.5f, 0));
+            _cook.gameObject.SetActive(false);
 
             BuildPanel(canvas);
         }
@@ -390,11 +411,16 @@ namespace Survival.Client.Game
             _feed.Add(new KeyValuePair<Text, float>(t, 2.6f));
         }
 
-        public void SetTarget(bool visible, NodeKind kind, float health01)
+        public void SetCookVisible(bool visible)
+        {
+            if (_cook.gameObject.activeSelf != visible) _cook.gameObject.SetActive(visible);
+        }
+
+        public void SetTarget(bool visible, string name, float health01)
         {
             if (_target.activeSelf != visible) _target.SetActive(visible);
             if (!visible) return;
-            _targetName.text = ItemVisuals.NodeName(kind);
+            _targetName.text = name;
             _targetBar.fillAmount = Mathf.Clamp01(health01);
         }
 
