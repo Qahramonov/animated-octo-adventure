@@ -50,7 +50,6 @@ namespace Survival.Client.WorldView
         private Camera _camera;
         private Material _foliage;
         private Material _rock;
-        private Material _rockBoulder, _rockStone, _rockMetal, _rockSulfur;
         private Dictionary<int, Batch> _batches = new Dictionary<int, Batch>();
         private Task<BuildResult> _task;
         private Vector3 _lastBuildPos = new Vector3(float.MaxValue, 0, 0);
@@ -85,11 +84,6 @@ namespace Survival.Client.WorldView
             v._camera = cam;
             v._foliage = (App.Materials.Lit("foliage", Color.white, 0f, 0f, 0f, 0.6f));
             v._rock = (App.Materials.Lit("rock", Color.white, 0.05f, 0.1f));
-            // Textured rock materials (triplanar scans); null entries fall back to the vertex-colour rock
-            v._rockBoulder = (App.Materials.Rock("rock_boulder", new Color(0.92f, 0.9f, 0.88f), Color.white, 0f));
-            v._rockStone = (App.Materials.Rock("rock_stone", new Color(1.05f, 1.05f, 1.08f), new Color(0.9f, 0.9f, 0.92f), 0.4f));
-            v._rockMetal = (App.Materials.Rock("rock_metal", new Color(0.78f, 0.72f, 0.68f), new Color(0.74f, 0.4f, 0.22f), 0.62f));
-            v._rockSulfur = (App.Materials.Rock("rock_sulfur", new Color(0.95f, 0.92f, 0.8f), new Color(0.96f, 0.82f, 0.12f), 0.62f));
             v.ApplyQuality();
             QualityManager.Changed += v.ApplyQuality;
             return v;
@@ -272,9 +266,7 @@ namespace Survival.Client.WorldView
             foreach (Batch b in _batches.Values)
             {
                 bool rocky = b.Kind == NodeKind.Boulder || NodeKinds.IsOre(b.Kind);
-                Material rockMat = b.Kind == NodeKind.Boulder ? _rockBoulder : b.Kind == NodeKind.StoneNode ? _rockStone
-                    : b.Kind == NodeKind.MetalNode ? _rockMetal : _rockSulfur;
-                var rp = new RenderParams(rocky ? (rockMat != null ? rockMat : _rock) : _foliage)
+                var rp = new RenderParams(Models.NodeMaterial(b.Kind, rocky ? _rock : _foliage))
                 {
                     shadowCastingMode = Shadows && b.Lod == 0 ? ShadowCastingMode.On : ShadowCastingMode.Off,
                     receiveShadows = true,

@@ -51,12 +51,37 @@ namespace Survival.Client.Rendering
         {
             switch (kind)
             {
+                case NodeKind.TreePine: return "tree_fir";
+                case NodeKind.TreeBroadleaf: return "tree_leaf";
+                case NodeKind.Bush: return "bush";
                 case NodeKind.Boulder: return "boulder_01";
                 case NodeKind.StoneNode: return "namaqualand_boulder_03";
                 case NodeKind.MetalNode: return "namaqualand_boulder_05";
                 case NodeKind.SulfurNode: return "namaqualand_boulder_02";
                 default: return null;
             }
+        }
+
+        /// <summary>
+        /// Material for a world node model: textured foliage / rock materials when the scanned assets are in the
+        /// build, otherwise the given vertex-colour fallback (which matches the procedural fallback meshes).
+        /// </summary>
+        public static Material NodeMaterial(NodeKind kind, Material fallback)
+        {
+            string scan = ScanName(kind);
+            if (scan == null || Resources.Load<Mesh>("PH/" + scan + "_lod0") == null) return fallback;
+            Material m = null;
+            switch (kind)
+            {
+                case NodeKind.TreePine: m = App.Materials.Foliage("tree_fir_atlas"); break;
+                case NodeKind.TreeBroadleaf:
+                case NodeKind.Bush: m = App.Materials.Foliage("tree_leaf_atlas"); break;
+                case NodeKind.Boulder: m = App.Materials.Rock("rock_boulder", new Color(0.92f, 0.9f, 0.88f), Color.white, 0f); break;
+                case NodeKind.StoneNode: m = App.Materials.Rock("rock_stone", new Color(1.05f, 1.05f, 1.08f), new Color(0.9f, 0.9f, 0.92f), 0.4f); break;
+                case NodeKind.MetalNode: m = App.Materials.Rock("rock_metal", new Color(0.78f, 0.72f, 0.68f), new Color(0.74f, 0.4f, 0.22f), 0.62f); break;
+                case NodeKind.SulfurNode: m = App.Materials.Rock("rock_sulfur", new Color(0.95f, 0.92f, 0.8f), new Color(0.96f, 0.82f, 0.12f), 0.62f); break;
+            }
+            return m != null ? m : fallback;
         }
 
         /// <summary>How a hand-held item model is placed in the hand (and for its icon).</summary>

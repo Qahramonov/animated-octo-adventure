@@ -26,6 +26,27 @@ namespace Survival.Editor
             bool data = name.EndsWith("_arm") || name.EndsWith("_rough") || name.EndsWith("_metal") || name.EndsWith("_ao");
 
             ti.isReadable = false;
+            bool atlas = name.EndsWith("_atlas");
+            if (atlas)
+            {
+                // Foliage atlas: cut-out alpha that must keep its coverage in the mip maps (thin needles far away)
+                ti.textureType = TextureImporterType.Default;
+                ti.sRGBTexture = true;
+                ti.alphaSource = TextureImporterAlphaSource.FromInput;
+                ti.alphaIsTransparency = false; // colours are already bled into the transparent area by make_trees.py
+                ti.mipmapEnabled = true;
+                ti.mipMapsPreserveCoverage = true;
+                ti.alphaTestReferenceValue = 0.38f;
+                ti.wrapMode = TextureWrapMode.Clamp;
+                ti.filterMode = FilterMode.Trilinear;
+                ti.anisoLevel = 2;
+                ti.maxTextureSize = 1024;
+                ti.SetPlatformTextureSettings(new TextureImporterPlatformSettings
+                {
+                    name = "Android", overridden = true, maxTextureSize = 1024, format = TextureImporterFormat.ASTC_6x6, compressionQuality = 50,
+                });
+                return;
+            }
             if (ui)
             {
                 ti.textureType = TextureImporterType.Sprite;

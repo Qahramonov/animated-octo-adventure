@@ -163,6 +163,29 @@ namespace Survival.Client.Rendering
             return m;
         }
 
+        private Shader _foliageShader;
+        private bool _foliageLookedUp;
+
+        /// <summary>Alpha-tested foliage material for a tree atlas (PH/&lt;atlas&gt;); null when unavailable.</summary>
+        public Material Foliage(string atlas)
+        {
+            string key = "foliage_" + atlas;
+            if (_cache.TryGetValue(key, out Material m)) return m;
+            if (!_foliageLookedUp)
+            {
+                _foliageLookedUp = true;
+                _foliageShader = Find("OROL/Foliage", "Shaders/OrolFoliage");
+            }
+            Texture2D tex = Tex(atlas);
+            if (_foliageShader != null && tex != null)
+            {
+                m = new Material(_foliageShader) { name = key };
+                m.SetTexture("_MainTex", tex);
+            }
+            _cache[key] = m;
+            return m;
+        }
+
         /// <summary>UV-mapped PBR-style material from a Poly Haven texture set (name_diff / _nor / _arm).</summary>
         public Material Textured(string set, float emission = 0f)
         {

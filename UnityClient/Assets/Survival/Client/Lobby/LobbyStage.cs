@@ -120,7 +120,7 @@ namespace Survival.Client.Lobby
 
         private void SpawnNode(NodeKind kind, Vector3 pos, float scale, float rot, Material mat)
         {
-            Transform t = Spawn(kind.ToString(), Models.Get(kind, 0), mat, pos);
+            Transform t = Spawn(kind.ToString(), Models.Get(kind, 0), Models.NodeMaterial(kind, mat), pos);
             t.localScale = Vector3.one * scale;
             t.localRotation = Quaternion.Euler(0, rot, 0);
         }
