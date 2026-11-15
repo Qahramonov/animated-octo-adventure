@@ -312,6 +312,9 @@ namespace Survival.Client.Rendering
 
             cam.targetTexture = null;
             RenderTexture.ReleaseTemporary(rt);
+            // Destroy is deferred to the end of the frame: hide the model now so the next icon baked in
+            // this frame does not contain it
+            obj.SetActive(false);
             Object.Destroy(camGo);
             Object.Destroy(obj);
             if (filled < 40)

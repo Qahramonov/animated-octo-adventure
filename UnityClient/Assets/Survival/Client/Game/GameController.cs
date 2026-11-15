@@ -605,6 +605,8 @@ namespace Survival.Client.Game
             float sway = Mathf.Sin(_bob * Mathf.PI) * Mathf.Clamp01(speed / 6f) * 0.012f;
             _toolPivot.localPosition = new Vector3(0.34f - strike * 0.12f, -0.34f + sway + strike * 0.08f, 0.62f + strike * 0.18f);
             _toolPivot.localRotation = Quaternion.Euler(-38f + strike * 78f, -12f - strike * 14f, 8f);
+            // Small items (rock, food, resources) are modelled larger than hand size for the icons
+            _toolPivot.localScale = Vector3.one * (ItemDb.ToolOf(held) == ItemDb.Hands || held.Id == ItemId.Rock ? 0.55f : 1f);
         }
 
         private void FeedbackAndAudio(float dt)
