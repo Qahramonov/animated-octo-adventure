@@ -71,6 +71,8 @@ namespace Survival.Client
         public event Action<DiedMsg> Died;
         public event Action<ChatMsg> Chat;
         public event Action Respawned;
+        /// <summary>View yaw the server asked for with the last teleport / respawn.</summary>
+        public float TeleportYaw { get; private set; }
         public event Action InventoryChanged;
         public event Action<HitResultMsg> HitResult;
         /// <summary>The set of depleted world nodes changed (vegetation must be rebuilt).</summary>
@@ -160,6 +162,7 @@ namespace Survival.Client
             _client.Teleported += t =>
             {
                 Sim?.Teleport(t);
+                TeleportYaw = t.Yaw;
                 Respawned?.Invoke();
             };
             _client.Died += d =>

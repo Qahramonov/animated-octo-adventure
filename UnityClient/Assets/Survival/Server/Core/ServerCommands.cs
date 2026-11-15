@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Survival.Core;
 using Survival.Gameplay;
 using Survival.Networking;
+using Survival.World;
 
 namespace Survival.Server
 {
@@ -143,6 +144,56 @@ namespace Survival.Server
                     if (!Enum.TryParse(a[0], true, out AnimalKind kind)) return "unknown kind: " + a[0];
                     SpawnAnimal(kind, pos);
                     return "spawned " + kind;
+                }
+                case "goto":
+                {
+                    // goto <player> <tree|bush|boulder|stone|metal|sulfur> : teleport next to the nearest such node
+                    string[] a = arg.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+                    PlayerSession ps = a.Length > 1 ? FindSession(a[0]) : null;
+                    if (ps?.Entity == null) return "usage: goto <player> <tree|bush|boulder|stone|metal|sulfur>";
+                    NodeKind want;
+                    switch (a[1].ToLowerInvariant())
+                    {
+                        case "tree": want = NodeKind.TreePine; break;
+                        case "bush": want = NodeKind.Bush; break;
+                        case "boulder": want = NodeKind.Boulder; break;
+                        case "stone": want = NodeKind.StoneNode; break;
+                        case "metal": want = NodeKind.MetalNode; break;
+                        case "sulfur": want = NodeKind.SulfurNode; break;
+                        default: return "unknown node kind: " + a[1];
+                    }
+                    var nodes = new List<WorldNode>(256);
+                    System.Numerics.Vector3 from = ps.Entity.Move.Position;
+                    for (float radius = 64f; radius <= 2048f; radius *= 2f)
+                    {
+                        nodes.Clear();
+                        World.Nodes.Query(from.X, from.Z, radius, nodes);
+                        float best = float.MaxValue;
+                        int pick = -1;
+                        for (int i = 0; i < nodes.Count; i++)
+                        {
+                            if (nodes[i].Kind != want || !IsNodeAlive(nodes[i].Id)) continue;
+                            float d = (nodes[i].X - from.X) * (nodes[i].X - from.X) + (nodes[i].Z - from.Z) * (nodes[i].Z - from.Z);
+                            if (d < best)
+                            {
+                                best = d;
+                                pick = i;
+                            }
+                        }
+                        if (pick < 0) continue;
+                        WorldNode node = nodes[pick];
+                        float x = node.X, z = node.Z - node.Radius - 2.2f; // stand south of it, facing north (+Z)
+                        ps.Entity.Move = MoveState.At(new System.Numerics.Vector3(x, World.GroundHeight(x, z), z));
+                        ps.Entity.Yaw = 0f;
+                        ps.Entity.History.Clear();
+                        ps.PendingInputs.Clear();
+                        OnEntityMoved(ps.Entity);
+                        _writer.Reset();
+                        new TeleportMsg { State = ps.Entity.Move, Yaw = 0f, Stats = ps.Entity.Stats }.Write(_writer);
+                        ps.Peer?.Send(_writer, NetProtocol.ChannelReliable, LiteNetLib.DeliveryMethod.ReliableOrdered);
+                        return $"moved {ps.Nickname} to {want} at {node.X:0},{node.Z:0}";
+                    }
+                    return "no such node found";
                 }
                 default:
                     return "unknown command, type 'help'";

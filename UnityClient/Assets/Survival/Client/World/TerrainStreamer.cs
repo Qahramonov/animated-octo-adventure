@@ -63,8 +63,9 @@ namespace Survival.Client.WorldView
             s._world = world;
             s._viewer = viewer;
             s.ViewDistance = viewDistance;
-            s._material = App.Materials.Lit("terrain", Color.white, 0.02f, 0f, 0f, 0f, 0.22f);
-            s._farMaterial = new Material(App.Materials.Lit("far_terrain", Color.white, 0f, 0f, 0f, 0f, 0.2f)) { name = "far_terrain_clip" };
+            Material textured = App.Materials.Terrain(world.Config.SeaLevel);
+            s._material = textured != null ? textured : App.Materials.Lit("terrain", Color.white, 0.02f, 0f, 0f, 0f, 0.22f);
+            s._farMaterial = new Material(textured != null ? textured : App.Materials.Lit("far_terrain", Color.white, 0f, 0f, 0f, 0f, 0.2f)) { name = "far_terrain_clip" };
             s._farTask = Task.Run(() => TerrainMeshes.ComputeFarIsland(world, 40f, 0.6f));
             return s;
         }

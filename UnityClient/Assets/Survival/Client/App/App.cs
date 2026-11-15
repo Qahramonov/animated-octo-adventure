@@ -97,9 +97,9 @@ namespace Survival.Client
             if (local == null) yield break;
             foreach (string cmd in new[]
             {
-                "time 0.5", "give * StoneHatchet", "give * StonePickaxe", "give * Spear", "give * Campfire 2", "give * Wood 240",
+                "time 0.45", "goto * metal", "give * StoneHatchet", "give * StonePickaxe", "give * Spear", "give * Campfire 2", "give * Wood 240",
                 "give * Stone 150", "give * MetalOre 60", "give * SulfurOre 40", "give * Fiber 80", "give * Berries 12", "give * RawMeat 5",
-                "give * CookedMeat 3", "give * Hide 4", "give * Bone 6", "spawn campfire * 3", "spawn boar * 8", "spawn deer * 17", "spawn wolf * 30",
+                "give * CookedMeat 3", "give * Hide 4", "give * Bone 6", "spawn campfire * 4", "spawn boar * 9", "spawn deer * 17",
             })
             {
                 local.EnqueueCommand(cmd);

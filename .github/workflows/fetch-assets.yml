@@ -5,7 +5,8 @@ on:
   workflow_dispatch:
   push:
     paths:
-      - "tools/assets/**"
+      - "tools/assets/manifest.json"
+      - "tools/assets/fetch_polyhaven.py"
       - ".github/workflows/fetch-assets.yml"
 permissions:
   contents: write

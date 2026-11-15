@@ -260,16 +260,31 @@ namespace Survival.Client.Rendering
             return s;
         }
 
+        private static readonly Dictionary<Material, Material> IconMaterials = new Dictionary<Material, Material>();
+
+        /// <summary>Copy of a textured material with emission so icons look the same at noon and at midnight.</summary>
+        private static Material IconMaterial(Material source)
+        {
+            if (IconMaterials.TryGetValue(source, out Material m) && m != null) return m;
+            m = new Material(source) { name = source.name + "_icon" };
+            m.SetFloat("_Emission", 0.7f);
+            IconMaterials[source] = m;
+            return m;
+        }
+
         private static Sprite Bake(ItemId id)
         {
-            Mesh mesh = Models.Tool(id);
+            Models.ItemPose pose = Models.Item(id);
             Vector3 origin = new Vector3(0, 3000f, 0);
             var obj = new GameObject("IconModel") { layer = Layer };
             obj.transform.position = origin;
-            obj.transform.rotation = Quaternion.Euler(-24f, 128f, 18f);
-            obj.AddComponent<MeshFilter>().sharedMesh = mesh;
+            obj.transform.rotation = Quaternion.Euler(-24f, 128f, 18f) * pose.Rotation;
+            obj.transform.localScale = Vector3.one * pose.Scale;
+            obj.AddComponent<MeshFilter>().sharedMesh = pose.Mesh;
             var mr = obj.AddComponent<MeshRenderer>();
-            mr.sharedMaterial = App.Materials.Lit("icon", Color.white, 0f, 0f, 0.85f);
+            // Procedural models get the bright unlit-ish icon material; scans keep their own textures
+            bool procedural = pose.Mesh == Models.Tool(id);
+            mr.sharedMaterial = procedural ? App.Materials.Lit("icon", Color.white, 0f, 0f, 0.85f) : IconMaterial(pose.Material);
             mr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
             mr.receiveShadows = false;
 

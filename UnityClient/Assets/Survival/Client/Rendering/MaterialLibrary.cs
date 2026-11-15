@@ -102,6 +102,87 @@ namespace Survival.Client.Rendering
             return m;
         }
 
+        // ------------------------------------------------------------------ textured (CC0 scans)
+
+        private Shader _terrainShader, _texturedShader;
+        private bool _texturedLookedUp;
+
+        private void FindTexturedShaders()
+        {
+            if (_texturedLookedUp) return;
+            _texturedLookedUp = true;
+            _terrainShader = Find("OROL/Terrain", "Shaders/OrolTerrain");
+            _texturedShader = Find("OROL/Textured", "Shaders/OrolTextured");
+        }
+
+        private static Texture2D Tex(string name) => Resources.Load<Texture2D>("PH/" + name);
+
+        /// <summary>Photo-textured terrain; null when the shader or its textures are unavailable (callers fall back to vertex colours).</summary>
+        public Material Terrain(float seaLevel)
+        {
+            if (_cache.TryGetValue("terrain_textured", out Material m)) return m;
+            FindTexturedShaders();
+            Texture2D grass = Tex("rocky_terrain_02_diff"), forest = Tex("forrest_ground_01_diff"), rock = Tex("rock_boulder_dry_diff"), sand = Tex("sand_01_diff");
+            if (_terrainShader != null && grass != null && forest != null && rock != null && sand != null)
+            {
+                m = new Material(_terrainShader) { name = "terrain_textured" };
+                m.SetTexture("_Grass", grass);
+                m.SetTexture("_Forest", forest);
+                m.SetTexture("_Rock", rock);
+                m.SetTexture("_Sand", sand);
+                m.SetTexture("_GrassN", Tex("rocky_terrain_02_nor"));
+                m.SetTexture("_RockN", Tex("rock_boulder_dry_nor"));
+                m.SetFloat("_SeaLevel", seaLevel);
+            }
+            else
+            {
+                Log.Warn("Render", "Textured terrain unavailable - using vertex colours");
+                m = null;
+            }
+            _cache["terrain_textured"] = m;
+            return m;
+        }
+
+        /// <summary>Triplanar rock material (boulders, ore nodes); veinAmount paints mineral veins.</summary>
+        public Material Rock(string key, Color tint, Color vein, float veinAmount)
+        {
+            if (_cache.TryGetValue(key, out Material m)) return m;
+            FindTexturedShaders();
+            Texture2D rock = Tex("rock_boulder_dry_diff");
+            if (_texturedShader != null && rock != null)
+            {
+                m = new Material(_texturedShader) { name = key };
+                m.SetTexture("_MainTex", rock);
+                m.SetColor("_Color", tint);
+                m.SetFloat("_Triplanar", 1f);
+                m.SetFloat("_TriScale", 0.55f);
+                m.SetColor("_VeinColor", vein);
+                m.SetFloat("_VeinAmount", veinAmount);
+            }
+            _cache[key] = m;
+            return m;
+        }
+
+        /// <summary>UV-mapped PBR-style material from a Poly Haven texture set (name_diff / _nor / _arm).</summary>
+        public Material Textured(string set, float emission = 0f)
+        {
+            string key = "tex_" + set + (emission > 0f ? "_e" : string.Empty);
+            if (_cache.TryGetValue(key, out Material m)) return m;
+            FindTexturedShaders();
+            Texture2D diff = Tex(set + "_diff");
+            if (_texturedShader != null && diff != null)
+            {
+                m = new Material(_texturedShader) { name = key };
+                m.SetTexture("_MainTex", diff);
+                Texture2D nor = Tex(set + "_nor"), arm = Tex(set + "_arm");
+                if (nor != null) m.SetTexture("_BumpMap", nor);
+                if (arm != null) m.SetTexture("_ArmMap", arm);
+                m.SetFloat("_Emission", emission);
+            }
+            _cache[key] = m;
+            return m;
+        }
+
         public Material Water(string key)
         {
             if (_cache.TryGetValue(key, out Material m) && m != null) return m;

@@ -17,6 +17,17 @@ namespace Survival.Client.Rendering
         {
             string key = kind + "_" + lod;
             if (Cache.TryGetValue(key, out Mesh m)) return m;
+            // Scanned rocks (CC0, Poly Haven) replace the procedural boulders when they are in the build
+            string scan = ScanName(kind);
+            if (scan != null)
+            {
+                m = Resources.Load<Mesh>("PH/" + scan + "_lod" + Mathf.Min(lod, 1));
+                if (m != null)
+                {
+                    Cache[key] = m;
+                    return m;
+                }
+            }
             B.Clear();
             switch (kind)
             {
@@ -34,6 +45,74 @@ namespace Survival.Client.Rendering
             m = B.ToMesh(key);
             Cache[key] = m;
             return m;
+        }
+
+        private static string ScanName(NodeKind kind)
+        {
+            switch (kind)
+            {
+                case NodeKind.Boulder: return "boulder_01";
+                case NodeKind.StoneNode: return "namaqualand_boulder_03";
+                case NodeKind.MetalNode: return "namaqualand_boulder_05";
+                case NodeKind.SulfurNode: return "namaqualand_boulder_02";
+                default: return null;
+            }
+        }
+
+        /// <summary>How a hand-held item model is placed in the hand (and for its icon).</summary>
+        public struct ItemPose
+        {
+            public Mesh Mesh;
+            public Material Material;
+            public Quaternion Rotation;
+            public Vector3 Offset;
+            public float Scale;
+        }
+
+        private static readonly Dictionary<Survival.Gameplay.ItemId, ItemPose> Poses = new Dictionary<Survival.Gameplay.ItemId, ItemPose>();
+
+        /// <summary>Mesh + material + pose of an item; scanned models where available, procedural otherwise.</summary>
+        public static ItemPose Item(Survival.Gameplay.ItemId id)
+        {
+            if (Poses.TryGetValue(id, out ItemPose p) && p.Mesh != null && p.Material != null) return p;
+            p = new ItemPose { Rotation = Quaternion.identity, Scale = 1f };
+            string scan = id == Survival.Gameplay.ItemId.StoneHatchet ? "hatchet" : id == Survival.Gameplay.ItemId.StonePickaxe ? "picke_dirty_01" : null;
+            if (scan != null)
+            {
+                Mesh mesh = Resources.Load<Mesh>("PH/" + scan + "_lod0");
+                Material mat = App.Materials.Textured(scan);
+                if (mesh != null && mat != null)
+                {
+                    // Scans stand upright (handle along +Y, head on top): lay them along +Z, grip at the origin
+                    p.Mesh = mesh;
+                    p.Material = mat;
+                    p.Rotation = Quaternion.Euler(90f, 0f, 0f);
+                    p.Scale = scan == "hatchet" ? 1.9f : 0.62f;
+                    p.Offset = new Vector3(0, 0, scan == "hatchet" ? 0.06f : 0.16f);
+                }
+            }
+            if (p.Mesh == null && (id == Survival.Gameplay.ItemId.Rock || id == Survival.Gameplay.ItemId.Stone))
+            {
+                Mesh mesh = Resources.Load<Mesh>("PH/namaqualand_boulder_05_lod1");
+                Material mat = App.Materials.Rock("rock_item", Color.white, Color.white, 0f);
+                if (mesh != null && mat != null)
+                {
+                    p.Mesh = mesh;
+                    p.Material = mat;
+                    p.Scale = 0.11f;
+                    p.Offset = new Vector3(0, -0.04f, 0.1f);
+                }
+            }
+            if (p.Mesh == null)
+            {
+                p.Mesh = Tool(id);
+                p.Material = App.Materials.Lit("tool", Color.white, 0.08f, 0.1f);
+                p.Rotation = Quaternion.identity;
+                p.Offset = Vector3.zero;
+                p.Scale = 1f;
+            }
+            Poses[id] = p;
+            return p;
         }
 
         private static void Pine(int lod)

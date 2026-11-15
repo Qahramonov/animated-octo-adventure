@@ -7,7 +7,7 @@ namespace Survival.Core
     {
         public const string Title = "OROL";
         public const string Subtitle = "SURVIVAL";
-        public const string Version = "0.3.0";
+        public const string Version = "0.4.0";
 
         /// <summary>Phase of the development roadmap this build implements (see docs/ROADMAP.md).</summary>
         public const string Phase = "Phase 2 - Gathering & Crafting";

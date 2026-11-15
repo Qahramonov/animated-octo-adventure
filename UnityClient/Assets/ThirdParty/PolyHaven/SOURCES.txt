@@ -1,0 +1,16 @@
+Everything under this folder comes from Poly Haven (https://polyhaven.com), licensed CC0 1.0 (public domain).
+Meshes were decimated and textures resized by tools/assets/convert.py.
+
+Assets:
+  https://polyhaven.com/a/rocky_terrain_02
+  https://polyhaven.com/a/forrest_ground_01
+  https://polyhaven.com/a/rock_boulder_dry
+  https://polyhaven.com/a/sand_01
+  https://polyhaven.com/a/bark_brown_02
+  https://polyhaven.com/a/snow_02
+  https://polyhaven.com/a/boulder_01
+  https://polyhaven.com/a/namaqualand_boulder_02
+  https://polyhaven.com/a/namaqualand_boulder_03
+  https://polyhaven.com/a/namaqualand_boulder_05
+  https://polyhaven.com/a/hatchet
+  https://polyhaven.com/a/picke_dirty_01

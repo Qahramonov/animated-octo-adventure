@@ -56,6 +56,7 @@ namespace Survival.Client.Game
         private Transform _toolPivot;
         private MeshFilter _toolMesh;
         private ItemId _toolShown = (ItemId)255;
+        private bool _toolIsSmall;
         private float _swing = 1f;          // 0..1 swing animation progress (1 = idle)
         private float _swingCooldown;
         private uint _pendingHit;
@@ -213,6 +214,8 @@ namespace Survival.Client.Game
         private void OnRespawned()
         {
             _hud.HideDeath();
+            _yaw = _session.TeleportYaw;
+            _pitch = 0f;
             _lastFeet = ToUnity(_sim.Predicted.Position);
         }
 
@@ -526,7 +529,20 @@ namespace Survival.Client.Game
             if (show != _toolShown)
             {
                 _toolShown = show;
-                _toolMesh.sharedMesh = show == ItemId.None ? null : Models.Tool(show);
+                if (show == ItemId.None)
+                {
+                    _toolMesh.sharedMesh = null;
+                }
+                else
+                {
+                    Models.ItemPose pose = Models.Item(show);
+                    _toolMesh.sharedMesh = pose.Mesh;
+                    _toolMesh.GetComponent<MeshRenderer>().sharedMaterial = pose.Material;
+                    _toolMesh.transform.localRotation = pose.Rotation;
+                    _toolMesh.transform.localPosition = pose.Offset;
+                    _toolMesh.transform.localScale = Vector3.one * pose.Scale;
+                    _toolIsSmall = pose.Mesh == Models.Tool(show) && ItemDb.ToolOf(held) == ItemDb.Hands;
+                }
             }
 
             // Animals and bots take priority over trees/rocks behind them
@@ -606,7 +622,7 @@ namespace Survival.Client.Game
             _toolPivot.localPosition = new Vector3(0.34f - strike * 0.12f, -0.34f + sway + strike * 0.08f, 0.62f + strike * 0.18f);
             _toolPivot.localRotation = Quaternion.Euler(-38f + strike * 78f, -12f - strike * 14f, 8f);
             // Small items (rock, food, resources) are modelled larger than hand size for the icons
-            _toolPivot.localScale = Vector3.one * (ItemDb.ToolOf(held) == ItemDb.Hands || held.Id == ItemId.Rock ? 0.55f : 1f);
+            _toolPivot.localScale = Vector3.one * (_toolIsSmall ? 0.55f : 1f);
         }
 
         private void FeedbackAndAudio(float dt)

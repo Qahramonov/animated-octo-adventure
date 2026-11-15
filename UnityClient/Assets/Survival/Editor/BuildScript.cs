@@ -69,6 +69,9 @@ namespace Survival.Editor
                 return;
             }
 
+            // Imported art: report problems in the build log (errors only fail the dedicated validation step)
+            Debug.Log(AssetImportValidator.Validate().ToString());
+
             ConfigurePlayerSettings(args);
 
             if (target == BuildTarget.Android)
