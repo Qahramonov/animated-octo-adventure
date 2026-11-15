@@ -72,6 +72,18 @@ def fetch(manifest_path, out):
             if m.get("textures_only") and not rel.lower().endswith((".jpg", ".png")):
                 continue
             size += download(inc["url"], os.path.join(base, rel))
+        if m.get("textures_only"):
+            # Foliage needs transparency: the glTF package ships JPGs, so also take PNG colour / opacity maps
+            keys = [k for k in files if k not in ("gltf", "blend", "fbx", "usd", "mtlx")]
+            report.append(f"   maps of {slug}: {', '.join(sorted(keys))}")
+            for key in keys:
+                low = key.lower()
+                if not (("diff" in low and any(w in low for w in ("twig", "leaves", "leaf", "branch", "grass", "needle")))
+                        or "alpha" in low or "opacity" in low or "mask" in low or low in ("diffuse",)):
+                    continue
+                entry_png = files[key].get(res, {}).get("png")
+                if entry_png:
+                    size += download(entry_png["url"], os.path.join(base, "png", f"{slug}_{key}.png"))
         report.append(f"ok model {slug} {size // 1024} KB")
     print("\n".join(report))
     os.makedirs(out, exist_ok=True)
