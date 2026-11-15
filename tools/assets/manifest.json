@@ -1,1 +1,96 @@
-{"textures": [], "models": []}
+{
+ "textures": [
+  {
+   "id": "leafy_grass"
+  },
+  {
+   "id": "sparse_grass"
+  },
+  {
+   "id": "aerial_grass_rock"
+  },
+  {
+   "id": "forrest_ground_01"
+  },
+  {
+   "id": "rock_boulder_dry"
+  },
+  {
+   "id": "aerial_beach_01"
+  },
+  {
+   "id": "sand_01"
+  },
+  {
+   "id": "bark_brown_02"
+  },
+  {
+   "id": "snow_02"
+  },
+  {
+   "id": "rocky_terrain_02"
+  }
+ ],
+ "models": [
+  {
+   "id": "boulder_01"
+  },
+  {
+   "id": "namaqualand_boulder_02"
+  },
+  {
+   "id": "namaqualand_boulder_03"
+  },
+  {
+   "id": "namaqualand_boulder_05"
+  },
+  {
+   "id": "hatchet"
+  },
+  {
+   "id": "picke_dirty_01"
+  },
+  {
+   "id": "old_military_crate"
+  },
+  {
+   "id": "Barrel_01"
+  },
+  {
+   "id": "medical_box"
+  },
+  {
+   "id": "fish_knife"
+  },
+  {
+   "id": "bolt_action_rifle_7_62"
+  },
+  {
+   "id": "service_pistol"
+  },
+  {
+   "id": "dead_tree_trunk_02"
+  },
+  {
+   "id": "fern_02"
+  },
+  {
+   "id": "ammo_box"
+  },
+  {
+   "id": "metal_jerrycan"
+  },
+  {
+   "id": "pastic_torch_6v"
+  },
+  {
+   "id": "crowbar_01"
+  },
+  {
+   "id": "WoodenTable_01"
+  },
+  {
+   "id": "cross_pein_hammer"
+  }
+ ]
+}

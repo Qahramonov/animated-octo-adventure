@@ -71,6 +71,7 @@ def fetch(manifest_path, out):
             size += download(inc["url"], os.path.join(base, rel))
         report.append(f"ok model {slug} {size // 1024} KB")
     print("\n".join(report))
+    os.makedirs(out, exist_ok=True)
     with open(os.path.join(out, "SOURCES.txt"), "w") as f:
         f.write("Assets in this folder come from Poly Haven (https://polyhaven.com) and are licensed CC0 1.0 (public domain).\n"
                 "Downloaded by tools/assets/fetch_polyhaven.py from tools/assets/manifest.json.\n\n" + "\n".join(report) + "\n")
