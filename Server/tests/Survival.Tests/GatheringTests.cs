@@ -137,7 +137,7 @@ namespace Survival.Tests
         [Fact]
         public void HitTreeUntilFelledThenCraft()
         {
-            var cfg = new ServerConfig { Port = 0, BotCount = 0, WorldSize = 2000f, StatusHttpPort = 0, NodeRespawnSeconds = 2f };
+            var cfg = new ServerConfig { Port = 0, BotCount = 0, WorldSize = 2000f, StatusHttpPort = 0, NodeRespawnSeconds = 2f, AnimalsPerPlayer = 0 };
             var server = new GameServer(cfg, new MemoryPlayerStore());
             Assert.True(server.Start());
             using var client = new GameClient(new ClientIdentity { PlayerId = "gatherer-0001", Secret = "s", Nickname = "Gatherer" }, "test");
@@ -223,6 +223,75 @@ namespace Survival.Tests
                 Assert.True(Pump(server, client, () => !depleted.Contains(tree.Id), 8, () =>
                     e.Move = MoveState.At(new Vector3(tree.X + 30f, tree.Y, tree.Z))), "tree did not respawn");
                 Assert.True(server.IsNodeAlive(tree.Id));
+            }
+            finally
+            {
+                server.Stop();
+            }
+        }
+
+        [Fact]
+        public void HuntCookAndWolfBites()
+        {
+            var cfg = new ServerConfig { Port = 0, BotCount = 0, WorldSize = 2000f, StatusHttpPort = 0, AnimalsPerPlayer = 0 };
+            var server = new GameServer(cfg, new MemoryPlayerStore());
+            Assert.True(server.Start());
+            using var client = new GameClient(new ClientIdentity { PlayerId = "hunter-000001", Secret = "s", Nickname = "Hunter" }, "test");
+            bool ready = false;
+            var attacks = new List<AttackResultMsg>();
+            var spawned = new Dictionary<uint, EntitySpawnMsg>();
+            client.WelcomeReceived += w => client.SendReady();
+            client.InventoryReceived += () => ready = true;
+            client.AttackResultReceived += a => attacks.Add(a);
+            client.EntitySpawned += m => spawned[m.Id] = m;
+            try
+            {
+                client.Connect("127.0.0.1", server.LocalPort);
+                Assert.True(Pump(server, client, () => ready, 8));
+                ServerEntity e = server.Sessions[0].Entity;
+                Vector3 home = e.Move.Position;
+
+                // A deer next to the player: replicated as an Animal entity, killed with the starter rock
+                ServerEntity deer = server.SpawnAnimal(AnimalKind.Deer, home + new Vector3(1.5f, 0, 0));
+                Assert.True(Pump(server, client, () => spawned.ContainsKey(deer.Id), 3));
+                Assert.Equal(EntityType.Animal, spawned[deer.Id].Type);
+                var sw = Stopwatch.StartNew();
+                double next = 0;
+                Assert.True(Pump(server, client, () => attacks.Count > 0 && attacks[attacks.Count - 1].Killed, 20, () =>
+                {
+                    e.Move = MoveState.At(home);
+                    if (!deer.Removed) deer.Move = MoveState.At(home + new Vector3(1.5f, 0, 0)); // hold it in reach (it flees)
+                    if (sw.Elapsed.TotalSeconds >= next)
+                    {
+                        next = sw.Elapsed.TotalSeconds + 0.5;
+                        client.SendAttack(deer.Id);
+                    }
+                }), "deer was not killed");
+                Assert.True(deer.Removed);
+                Assert.Equal(4, client.Inventory.CountOf(ItemId.RawMeat));
+                Assert.True(client.Inventory.CountOf(ItemId.Hide) > 0);
+
+                // No fire nearby: cooking does nothing
+                client.SendCook();
+                Pump(server, client, () => false, 0.5, () => e.Move = MoveState.At(home));
+                Assert.Equal(0, client.Inventory.CountOf(ItemId.CookedMeat));
+
+                // Place a campfire from the hotbar and cook next to it
+                e.Items.Add(ItemId.Campfire, 1);
+                int slot = Array.FindIndex(e.Items.Slots, s => s.Id == ItemId.Campfire);
+                client.SendPlace(slot, home.X + 2f, home.Z, 0f);
+                Assert.True(Pump(server, client, () => server.Structures.Count == 1, 3, () => e.Move = MoveState.At(home)), "campfire was not placed");
+                Assert.Equal(0, e.Items.CountOf(ItemId.Campfire));
+                Pump(server, client, () => false, 0.5, () => e.Move = MoveState.At(home));
+                client.SendCook();
+                Assert.True(Pump(server, client, () => client.Inventory.CountOf(ItemId.CookedMeat) == 1, 3, () => e.Move = MoveState.At(home)), "meat was not cooked");
+                Assert.Equal(3, client.Inventory.CountOf(ItemId.RawMeat));
+
+                // A wolf hunts and bites the player
+                float before = e.Stats.Health;
+                ServerEntity wolf = server.SpawnAnimal(AnimalKind.Wolf, home + new Vector3(0, 0, 6f));
+                Assert.True(Pump(server, client, () => e.Stats.Health < before - 5f, 15), "wolf never bit the player");
+                Assert.False(wolf.Removed);
             }
             finally
             {

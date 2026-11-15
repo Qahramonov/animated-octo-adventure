@@ -114,6 +114,7 @@ namespace Survival.Networking
         /// <summary>The local inventory was replaced by the server's copy.</summary>
         public event Action InventoryReceived;
         public event Action<HitResultMsg> HitResultReceived;
+        public event Action<AttackResultMsg> AttackResultReceived;
         /// <summary>(reset, depleted, ids): world nodes that were depleted or came back.</summary>
         public event Action<bool, bool, List<uint>> NodeStateReceived;
 
@@ -293,6 +294,27 @@ namespace Survival.Networking
             SendReliable();
         }
 
+        public void SendAttack(uint entityId)
+        {
+            _writer.Reset();
+            ActionMsg2.WriteAttack(_writer, entityId);
+            SendReliable();
+        }
+
+        public void SendPlace(int slot, float x, float z, float yaw)
+        {
+            _writer.Reset();
+            ActionMsg2.WritePlace(_writer, (byte)slot, x, z, yaw);
+            SendReliable();
+        }
+
+        public void SendCook()
+        {
+            _writer.Reset();
+            ActionMsg2.WriteCook(_writer);
+            SendReliable();
+        }
+
         public void SendChat(string text)
         {
             if (_peer == null || string.IsNullOrWhiteSpace(text)) return;
@@ -404,6 +426,9 @@ namespace Survival.Networking
                         break;
                     case MsgId.HitResult:
                         HitResultReceived?.Invoke(HitResultMsg.Read(reader));
+                        break;
+                    case MsgId.AttackResult:
+                        AttackResultReceived?.Invoke(AttackResultMsg.Read(reader));
                         break;
                     case MsgId.NodeState:
                         NodeStateMsg.Read(reader, out bool reset, out bool depleted, _nodeScratch);

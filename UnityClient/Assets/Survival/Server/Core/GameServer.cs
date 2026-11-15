@@ -104,6 +104,7 @@ namespace Survival.Server
             _bots = new BotManager(this, (uint)config.WorldSeed);
             _replication = new Replication(this);
             InitGathering();
+            _animalRng = new Rng((uint)config.WorldSeed ^ 0xA11A15u);
 
             _listener.ConnectionRequestEvent += OnConnectionRequest;
             _listener.PeerConnectedEvent += OnPeerConnected;
@@ -220,6 +221,7 @@ namespace Survival.Server
             int realPlayers = ConnectedPlayerCount();
             _bots.Balance(realPlayers);
             _bots.Tick(CurrentTick, TickDt);
+            TickWildlife(now);
 
             // Lag compensation history
             for (int i = 0; i < _entityList.Count; i++) _entityList[i].RecordHistory(CurrentTick);
@@ -648,6 +650,15 @@ namespace Survival.Server
                         break;
                     case MsgId.ClientDrink:
                         HandleDrink(s);
+                        break;
+                    case MsgId.ClientAttack:
+                        HandleAttack(s, reader.GetUInt());
+                        break;
+                    case MsgId.ClientPlace:
+                        HandlePlace(s, reader.GetByte(), reader.GetFloat(), reader.GetFloat(), reader.GetFloat());
+                        break;
+                    case MsgId.ClientCook:
+                        HandleCook(s);
                         break;
                     case MsgId.ClientChat:
                         ChatMsg chat = ChatMsg.Read(reader);

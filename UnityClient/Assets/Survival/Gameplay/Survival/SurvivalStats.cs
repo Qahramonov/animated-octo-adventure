@@ -98,7 +98,8 @@ namespace Survival.Gameplay
         {
             s.Hunger = Math.Min(SurvivalStats.Max, s.Hunger + food);
             s.Thirst = Math.Min(SurvivalStats.Max, s.Thirst + water);
-            s.Health = Math.Min(SurvivalStats.Max, s.Health + heal);
+            // Negative heal (raw meat) hurts but never kills
+            s.Health = heal < 0f ? Math.Max(1f, s.Health + heal) : Math.Min(SurvivalStats.Max, s.Health + heal);
         }
     }
 }

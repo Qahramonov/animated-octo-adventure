@@ -7,7 +7,7 @@ namespace Survival.Networking
     /// </summary>
     public static class NetProtocol
     {
-        public const int Version = 2;
+        public const int Version = 3;
         public const string AppKey = "OROL-SURVIVAL";
         public const int DefaultPort = 7777;
         public const int DefaultStatusPort = 8080;
@@ -40,6 +40,9 @@ namespace Survival.Networking
         ClientUseItem = 7,
         ClientMoveItem = 8,
         ClientDrink = 9,
+        ClientAttack = 10,
+        ClientPlace = 11,
+        ClientCook = 12,
 
         // server -> client
         Welcome = 64,
@@ -53,6 +56,7 @@ namespace Survival.Networking
         Inventory = 72,
         HitResult = 73,
         NodeState = 74,
+        AttackResult = 75,
     }
 
     public enum QueryKind : byte
@@ -91,6 +95,7 @@ namespace Survival.Networking
         Container = 5,
         Projectile = 6,
         Airdrop = 7,
+        Structure = 8,
     }
 
     public enum NoticeKind : byte

@@ -38,6 +38,7 @@ namespace Survival.Server
         /// <summary>Inventory (players only; the same instance as <see cref="PlayerRecord.Items"/>).</summary>
         public Inventory Items;
         public BotBrain Bot;
+        public AnimalBrain Animal;
 
         public bool IsDead => Stats.Health <= 0f;
         public Vector3 Position => Move.Position;

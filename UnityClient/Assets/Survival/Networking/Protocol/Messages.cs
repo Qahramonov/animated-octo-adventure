@@ -662,4 +662,54 @@ namespace Survival.Networking
 
         public static void WriteDrink(NetDataWriter w) => w.Put((byte)MsgId.ClientDrink);
     }
+
+    /// <summary>Server answer to a melee swing at an entity: its health and any loot gained.</summary>
+    public struct AttackResultMsg
+    {
+        public uint EntityId;
+        public byte Health;
+        public bool Killed;
+        public byte Meat, Hide, Bone;
+
+        public void Write(NetDataWriter w)
+        {
+            w.Put((byte)MsgId.AttackResult);
+            w.Put(EntityId);
+            w.Put(Health);
+            w.Put(Killed);
+            w.Put(Meat);
+            w.Put(Hide);
+            w.Put(Bone);
+        }
+
+        public static AttackResultMsg Read(NetDataReader r) => new AttackResultMsg
+        {
+            EntityId = r.GetUInt(),
+            Health = r.GetByte(),
+            Killed = r.GetBool(),
+            Meat = r.GetByte(),
+            Hide = r.GetByte(),
+            Bone = r.GetByte(),
+        };
+    }
+
+    public static class ActionMsg2
+    {
+        public static void WriteAttack(NetDataWriter w, uint entityId)
+        {
+            w.Put((byte)MsgId.ClientAttack);
+            w.Put(entityId);
+        }
+
+        public static void WritePlace(NetDataWriter w, byte slot, float x, float z, float yaw)
+        {
+            w.Put((byte)MsgId.ClientPlace);
+            w.Put(slot);
+            w.Put(x);
+            w.Put(z);
+            w.Put(yaw);
+        }
+
+        public static void WriteCook(NetDataWriter w) => w.Put((byte)MsgId.ClientCook);
+    }
 }

@@ -13,6 +13,10 @@ namespace Survival.Gameplay
         SulfurOre = 4,
         Fiber = 5,
         Berries = 6,
+        RawMeat = 7,
+        CookedMeat = 8,
+        Hide = 9,
+        Bone = 14,
         // tools
         Rock = 10,
         StoneHatchet = 11,
@@ -20,6 +24,8 @@ namespace Survival.Gameplay
         Spear = 13,
         // consumables
         Bandage = 20,
+        // placeables
+        Campfire = 30,
     }
 
     public enum ItemKind : byte
@@ -28,6 +34,7 @@ namespace Survival.Gameplay
         Tool,
         Food,
         Medical,
+        Placeable,
     }
 
     public sealed class ItemDef
@@ -75,7 +82,7 @@ namespace Survival.Gameplay
     /// <summary>Static item and recipe tables shared by the server (rules) and the client (UI).</summary>
     public static class ItemDb
     {
-        private static readonly ItemDef[] Defs = new ItemDef[32];
+        private static readonly ItemDef[] Defs = new ItemDef[64];
         public static readonly Recipe[] Recipes;
 
         /// <summary>Bare hands: slow gathering of anything, no item required.</summary>
@@ -89,6 +96,11 @@ namespace Survival.Gameplay
             Add(new ItemDef { Id = ItemId.SulfurOre, Key = "sulfur_ore", Kind = ItemKind.Resource, MaxStack = 1000 });
             Add(new ItemDef { Id = ItemId.Fiber, Key = "fiber", Kind = ItemKind.Resource, MaxStack = 500 });
             Add(new ItemDef { Id = ItemId.Berries, Key = "berries", Kind = ItemKind.Food, MaxStack = 50, Food = 7f, Water = 5f, Heal = 1f });
+            Add(new ItemDef { Id = ItemId.RawMeat, Key = "raw_meat", Kind = ItemKind.Food, MaxStack = 20, Food = 8f, Water = 0f, Heal = -6f });
+            Add(new ItemDef { Id = ItemId.CookedMeat, Key = "cooked_meat", Kind = ItemKind.Food, MaxStack = 20, Food = 32f, Water = 2f, Heal = 5f });
+            Add(new ItemDef { Id = ItemId.Hide, Key = "hide", Kind = ItemKind.Resource, MaxStack = 100 });
+            Add(new ItemDef { Id = ItemId.Bone, Key = "bone", Kind = ItemKind.Resource, MaxStack = 200 });
+            Add(new ItemDef { Id = ItemId.Campfire, Key = "campfire", Kind = ItemKind.Placeable, MaxStack = 5 });
             Add(new ItemDef { Id = ItemId.Rock, Key = "rock", Kind = ItemKind.Tool, MaxStack = 1, TreePower = 1f, OrePower = 1f, Damage = 10f });
             Add(new ItemDef { Id = ItemId.StoneHatchet, Key = "stone_hatchet", Kind = ItemKind.Tool, MaxStack = 1, TreePower = 2.6f, OrePower = 0.5f, Damage = 18f });
             Add(new ItemDef { Id = ItemId.StonePickaxe, Key = "stone_pickaxe", Kind = ItemKind.Tool, MaxStack = 1, TreePower = 0.5f, OrePower = 2.6f, Damage = 16f });
@@ -101,6 +113,7 @@ namespace Survival.Gameplay
                 new Recipe { Id = 2, Result = ItemId.StonePickaxe, Count = 1, Cost = new[] { new Ingredient(ItemId.Wood, 60), new Ingredient(ItemId.Stone, 40), new Ingredient(ItemId.Fiber, 10) } },
                 new Recipe { Id = 3, Result = ItemId.Spear, Count = 1, Cost = new[] { new Ingredient(ItemId.Wood, 90), new Ingredient(ItemId.Stone, 15) } },
                 new Recipe { Id = 4, Result = ItemId.Bandage, Count = 1, Cost = new[] { new Ingredient(ItemId.Fiber, 12) } },
+                new Recipe { Id = 6, Result = ItemId.Campfire, Count = 1, Cost = new[] { new Ingredient(ItemId.Wood, 80), new Ingredient(ItemId.Stone, 20) } },
                 new Recipe { Id = 5, Result = ItemId.Rock, Count = 1, Cost = new[] { new Ingredient(ItemId.Stone, 10) } },
             };
         }
@@ -309,6 +322,41 @@ namespace Survival.Gameplay
                     main = ItemId.Wood;
                     mainCount = (int)Math.Ceiling(damage * 1.5f) + (finished ? 20 : 0);
                     return;
+            }
+        }
+    }
+
+    public enum AnimalKind : byte
+    {
+        Deer = 0,
+        Boar = 1,
+        Wolf = 2,
+    }
+
+    public enum StructureKind : byte
+    {
+        Campfire = 0,
+    }
+
+    /// <summary>Melee combat, wildlife and placeable rules shared by the server and the client UI.</summary>
+    public static class CombatRules
+    {
+        public const float MeleeReach = 3.0f;
+        public const float PlaceReach = 4.5f;
+        public const float CookReach = 3.5f;
+
+        /// <summary>Damage multiplier against an animal (all animals use a 0..100 health scale).</summary>
+        public static float DamageScale(AnimalKind k) => k == AnimalKind.Deer ? 1.6f : k == AnimalKind.Boar ? 1.0f : 1.25f;
+
+        public static float BiteDamage(AnimalKind k) => k == AnimalKind.Wolf ? 14f : k == AnimalKind.Boar ? 10f : 0f;
+
+        public static void Loot(AnimalKind k, out int meat, out int hide, out int bone)
+        {
+            switch (k)
+            {
+                case AnimalKind.Deer: meat = 4; hide = 2; bone = 2; break;
+                case AnimalKind.Boar: meat = 5; hide = 1; bone = 2; break;
+                default: meat = 2; hide = 2; bone = 3; break;
             }
         }
     }

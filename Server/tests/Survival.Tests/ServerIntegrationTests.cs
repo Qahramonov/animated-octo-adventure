@@ -77,6 +77,7 @@ namespace Survival.Tests
                 StatusHttpPort = 0,
                 ReconnectGraceSeconds = 30f,
                 DisconnectTimeoutMs = 2000,
+                AnimalsPerPlayer = 0,
             };
             configure?.Invoke(cfg);
             var server = new GameServer(cfg, store ?? new MemoryPlayerStore());
