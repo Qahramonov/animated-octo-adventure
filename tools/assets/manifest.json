@@ -29,6 +29,15 @@
   },
   {
    "id": "rocky_terrain_02"
+  },
+  {
+   "id": "bark_brown_01"
+  },
+  {
+   "id": "bark_willow"
+  },
+  {
+   "id": "tree_bark_03"
   }
  ],
  "models": [
@@ -91,6 +100,34 @@
   },
   {
    "id": "cross_pein_hammer"
+  },
+  {
+   "id": "fir_tree_01",
+   "textures_only": true
+  },
+  {
+   "id": "pine_tree_01",
+   "textures_only": true
+  },
+  {
+   "id": "island_tree_01",
+   "textures_only": true
+  },
+  {
+   "id": "jacaranda_tree",
+   "textures_only": true
+  },
+  {
+   "id": "fir_sapling_medium",
+   "textures_only": true
+  },
+  {
+   "id": "grass_medium_01",
+   "textures_only": true
+  },
+  {
+   "id": "pine_sapling_small",
+   "textures_only": true
   }
  ]
 }

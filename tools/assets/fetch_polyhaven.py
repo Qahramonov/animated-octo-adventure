@@ -68,6 +68,9 @@ def fetch(manifest_path, out):
         base = os.path.join(out, "Models", slug)
         size = download(entry["url"], os.path.join(base, f"{slug}.gltf"))
         for rel, inc in entry.get("include", {}).items():
+            # textures_only: huge scans (trees with millions of triangles) - only their texture atlases are used
+            if m.get("textures_only") and not rel.lower().endswith((".jpg", ".png")):
+                continue
             size += download(inc["url"], os.path.join(base, rel))
         report.append(f"ok model {slug} {size // 1024} KB")
     print("\n".join(report))
