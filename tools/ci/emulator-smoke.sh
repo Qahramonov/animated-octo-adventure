@@ -51,6 +51,7 @@ adb shell cat /sdcard/Android/data/$PKG/files/orol-log.txt > "$OUT/orol-log.txt"
 echo "===== Unity / crash log (filtered, last 400 lines) ====="
 tail -n 400 "$OUT/logcat-unity.txt"
 echo "Shader link errors: $(grep -c "GLSL link error" "$OUT/logcat-unity.txt")"
+echo "===== Performance ====="; grep -E "\[Perf\]" "$OUT/logcat-unity.txt" | cut -c1-200 || true
 echo "===== Errors ====="
 grep -nE "Exception|Error|FATAL|SIGSEGV|SIGABRT" "$OUT/logcat-unity.txt" | head -n 120 || true
 # Small inline previews (readable from the job log without downloading artifacts)

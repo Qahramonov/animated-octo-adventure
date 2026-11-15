@@ -182,7 +182,7 @@ namespace Survival.Server
                         }
                         if (pick < 0) continue;
                         WorldNode node = nodes[pick];
-                        float x = node.X, z = node.Z - node.Radius - 2.2f; // stand south of it, facing north (+Z)
+                        float x = node.X, z = node.Z - node.Radius - 4.5f; // stand south of it, facing north (+Z)
                         ps.Entity.Move = MoveState.At(new System.Numerics.Vector3(x, World.GroundHeight(x, z), z));
                         ps.Entity.Yaw = 0f;
                         ps.Entity.History.Clear();

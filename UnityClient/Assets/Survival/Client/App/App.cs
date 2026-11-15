@@ -105,6 +105,15 @@ namespace Survival.Client
                 local.EnqueueCommand(cmd);
             }
             Debug.Log("[App] Auto-start: test scene staged");
+            // Performance samples for the CI log (the emulator renders on the CPU, so these are a lower bound)
+            for (int sample = 0; sample < 8; sample++)
+            {
+                int frames = Time.frameCount;
+                float t0 = Time.realtimeSinceStartup;
+                yield return new WaitForSecondsRealtime(5f);
+                float fps = (Time.frameCount - frames) / Mathf.Max(0.01f, Time.realtimeSinceStartup - t0);
+                Debug.Log($"[Perf] fps={fps:0.0} quality={Settings.Preset} gpu={SystemInfo.graphicsDeviceName} mem={System.GC.GetTotalMemory(false) / (1024 * 1024)}MB");
+            }
         }
 
         /// <summary>String extra of the Android launch intent (empty elsewhere). Used by the CI smoke test.</summary>

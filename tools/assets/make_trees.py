@@ -129,12 +129,12 @@ def fir(rects, lod, seed=7):
         m.tube((0, h0, 0), (0, h1, 0), r0, r1, sides, i % 2, (i + 1) % 2)
     whorls = 12
     per = 5
-    h_start, h_end = 1.3, height - 0.9
+    h_start, h_end = 2.5, height - 0.9  # bare trunk below head height: the player can walk up to it and see
     for w in range(whorls):
         t = w / (whorls - 1)
         h = h_start + (h_end - h_start) * t
-        length = 3.5 * (1 - t) ** 0.8 + 0.6
-        pitch = math.radians(-20 + 36 * t)
+        length = 3.3 * (1 - t) ** 0.8 + 0.6
+        pitch = math.radians(-8 + 30 * t)
         for k in range(per):
             yaw = 2 * math.pi * (k / per) + w * 2.399 + rnd.uniform(-0.15, 0.15)
             d = dir_from(yaw, pitch + math.radians(rnd.uniform(-5, 5)))

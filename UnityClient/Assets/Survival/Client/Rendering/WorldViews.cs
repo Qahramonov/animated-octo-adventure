@@ -267,7 +267,7 @@ namespace Survival.Client.Rendering
         {
             if (IconMaterials.TryGetValue(source, out Material m) && m != null) return m;
             m = new Material(source) { name = source.name + "_icon" };
-            m.SetFloat("_Emission", 0.7f);
+            m.SetFloat("_Emission", 1.5f);
             IconMaterials[source] = m;
             return m;
         }
