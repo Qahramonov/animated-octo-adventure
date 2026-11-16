@@ -27,6 +27,8 @@ namespace Survival.Client.Lobby
         private Task<TerrainMeshes.FarIslandData> _islandTask;
         private Transform _islandRoot;
 
+        private float _age;
+
         public Camera Camera => _cam;
         public HumanoidView Hero => _hero;
 
@@ -52,8 +54,8 @@ namespace Survival.Client.Lobby
 
             _sky = SkyController.Create(_cam, 5000f);
             _sky.transform.SetParent(transform, false);
-            _sky.FogStart = 300f;
-            _sky.FogEnd = 4200f;
+            _sky.FogStart = 60f;
+            _sky.FogEnd = 3200f;
             _sky.SetTime(0.712f);
             _sky.Sun.shadows = QualityManager.Shadows ? LightShadows.Soft : LightShadows.None;
 
@@ -64,40 +66,61 @@ namespace Survival.Client.Lobby
             Material foliage = App.Materials.Lit("foliage", Color.white, 0f, 0f, 0f, 0.6f);
             Material plain = App.Materials.Lit("plain", Color.white);
 
-            // Outcrop under the hero and scattered rocks
-            var mb = new MeshBuilder();
-            mb.Blob(new Vector3(0, -1.2f, 0.6f), new Vector3(4.2f, 1.25f, 3.6f), MeshBuilder.Rgb(0.42f, 0.40f, 0.37f), 1, 0.12f, 3, 0.1f);
-            mb.Blob(new Vector3(-3.6f, -1.4f, 2.5f), new Vector3(2.6f, 1.6f, 2.4f), MeshBuilder.Rgb(0.38f, 0.37f, 0.35f), 1, 0.2f, 4, 0.1f);
-            mb.Blob(new Vector3(3.8f, -1.6f, 3.0f), new Vector3(2.2f, 1.3f, 2.0f), MeshBuilder.Rgb(0.40f, 0.38f, 0.36f), 0, 0.2f, 5, 0.1f);
-            mb.Blob(new Vector3(1.5f, -1.5f, -2.2f), new Vector3(1.8f, 0.9f, 1.3f), MeshBuilder.Rgb(0.36f, 0.35f, 0.33f), 0, 0.2f, 6, 0.1f);
-            // Moss/grass cap on the outcrop
-            mb.Blob(new Vector3(0.2f, -0.17f, 0.8f), new Vector3(3.2f, 0.22f, 2.6f), MeshBuilder.Rgb(0.30f, 0.42f, 0.2f), 1, 0.08f, 9, 0.12f);
-            Spawn("Outcrop", mb.ToMesh("outcrop"), rockMat, Vector3.zero);
-
-            // Trees behind the hero
-            SpawnNode(NodeKind.TreePine, new Vector3(-2.6f, -0.3f, 3.4f), 1.1f, 20f, foliage);
-            SpawnNode(NodeKind.TreePine, new Vector3(3.4f, -0.6f, 4.6f), 1.3f, 75f, foliage);
-            SpawnNode(NodeKind.TreeBroadleaf, new Vector3(-5.5f, -0.8f, 6f), 1.2f, 140f, foliage);
-            SpawnNode(NodeKind.Bush, new Vector3(2.4f, -0.25f, 1.6f), 1f, 10f, foliage);
-            SpawnNode(NodeKind.Bush, new Vector3(-2.0f, -0.25f, 0.4f), 0.8f, 200f, foliage);
-            SpawnNode(NodeKind.Boulder, new Vector3(2.9f, -0.35f, -0.2f), 0.7f, 30f, rockMat);
+            // Island clearing: textured ground, forest edge behind the character, scanned rocks
+            BuildGround();
+            var forest = new GameObject("Forest").transform;
+            forest.SetParent(transform, false);
+            var rng = new Survival.Core.Rng(1337);
+            for (int i = 0; i < 46; i++)
+            {
+                // Forest arc behind and beside the character (camera looks towards +Z)
+                float ang = Mathf.Lerp(-150f, 150f, rng.NextFloat()) * Mathf.Deg2Rad;
+                float dist = 7f + rng.NextFloat() * 26f;
+                Vector3 p = new Vector3(Mathf.Sin(ang) * dist, 0, 2f + Mathf.Cos(ang) * dist * 0.85f);
+                if (p.z < 3.5f && Mathf.Abs(p.x) < 9f) continue; // keep the view to the camp clear
+                p.y = GroundHeight(p.x, p.z) - 0.05f;
+                NodeKind kind = rng.NextFloat() < 0.68f ? NodeKind.TreePine : NodeKind.TreeBroadleaf;
+                SpawnNode(kind, p, 0.85f + rng.NextFloat() * 0.45f, rng.Range(0f, 360f), foliage, forest);
+            }
+            for (int i = 0; i < 22; i++)
+            {
+                float ang = rng.Range(-170f, 170f) * Mathf.Deg2Rad;
+                float dist = 3.2f + rng.NextFloat() * 14f;
+                Vector3 p = new Vector3(Mathf.Sin(ang) * dist, 0, 1.5f + Mathf.Cos(ang) * dist);
+                if (p.z < 0.5f && Mathf.Abs(p.x) < 3f) continue;
+                p.y = GroundHeight(p.x, p.z) - 0.05f;
+                SpawnNode(NodeKind.Bush, p, 0.7f + rng.NextFloat() * 0.6f, rng.Range(0f, 360f), foliage, forest);
+            }
+            SpawnNode(NodeKind.Boulder, new Vector3(2.7f, GroundHeight(2.7f, -0.3f) - 0.15f, -0.3f), 0.75f, 30f, rockMat, forest);
+            SpawnNode(NodeKind.Boulder, new Vector3(-3.4f, GroundHeight(-3.4f, 2.6f) - 0.2f, 2.6f), 1.3f, 140f, rockMat, forest);
+            SpawnNode(NodeKind.MetalNode, new Vector3(5.6f, GroundHeight(5.6f, 4.2f) - 0.15f, 4.2f), 1.0f, 75f, rockMat, forest);
+            SpawnNode(NodeKind.StoneNode, new Vector3(-6.5f, GroundHeight(-6.5f, -1.0f) - 0.15f, -1.0f), 0.9f, 210f, rockMat, forest);
+            SpawnNode(NodeKind.Boulder, new Vector3(9f, GroundHeight(9f, 11f) - 0.3f, 11f), 2.2f, 10f, rockMat, forest);
             var grass = Models.GrassTuft();
-            for (int i = 0; i < 26; i++)
+            for (int i = 0; i < 40; i++)
             {
                 float a = i * 2.4f;
-                Vector3 p = new Vector3(Mathf.Cos(a) * (1.2f + (i % 5) * 0.45f), -0.12f, 0.8f + Mathf.Sin(a) * (1f + (i % 4) * 0.4f));
+                Vector3 p = new Vector3(Mathf.Cos(a) * (1.2f + (i % 7) * 0.6f), 0, 0.8f + Mathf.Sin(a) * (1f + (i % 5) * 0.55f));
+                p.y = GroundHeight(p.x, p.z) - 0.04f;
                 var g = Spawn("Grass", grass, foliage, p);
+                g.SetParent(forest, true);
                 g.localScale = Vector3.one * (0.8f + (i % 3) * 0.25f);
                 g.rotation = Quaternion.Euler(0, i * 37f, 0);
             }
+            // Fewer draw calls on phones: merge the static scenery per material
+            StaticBatchingUtility.Combine(forest.gameObject);
+
+            // Character spot: the hero stands on this anchor; a future character model is parented here
+            CharacterAnchor = new GameObject("CharacterAnchor").transform;
+            CharacterAnchor.SetParent(transform, false);
+            CharacterAnchor.localPosition = new Vector3(0.55f, GroundHeight(0.55f, 0.2f), 0.2f);
+            CharacterAnchor.localRotation = Quaternion.Euler(0, 200f, 0);
 
             // Hero
-            _hero = HumanoidView.Create(transform, "Hero", HumanoidView.Palette.Survivor, plain, true);
-            _hero.transform.position = new Vector3(0.55f, -0.08f, 0.2f);
-            _hero.transform.rotation = Quaternion.Euler(0, 200f, 0);
+            _hero = HumanoidView.Create(CharacterAnchor, "Hero", HumanoidView.Palette.Survivor, plain, true);
             _hero.Expressive = true;
 
-            BuildCampfire(new Vector3(-0.9f, -0.12f, -0.6f), plain);
+            BuildCampfire(new Vector3(-0.9f, GroundHeight(-0.9f, -0.6f) - 0.04f, -0.6f), plain);
             BuildFireflies();
 
             // Real island silhouette across the water (generated off-thread)
@@ -118,9 +141,68 @@ namespace Survival.Client.Lobby
             return go.transform;
         }
 
-        private void SpawnNode(NodeKind kind, Vector3 pos, float scale, float rot, Material mat)
+        /// <summary>Anchor of the menu character (a realistic model replaces the procedural hero here later).</summary>
+        public Transform CharacterAnchor { get; private set; }
+
+        private const float GroundRadius = 70f;
+
+        /// <summary>Gentle clearing: flat around the camp, rising to a low ridge behind it, dropping to the shore in front.</summary>
+        private static float GroundHeight(float x, float z)
+        {
+            float r = Mathf.Sqrt(x * x + z * z);
+            float ridge = Mathf.Clamp01((z - 4f) / 30f) * 3.2f;
+            float bumps = (Mathf.PerlinNoise(x * 0.09f + 3f, z * 0.09f + 7f) - 0.5f) * 1.4f * Mathf.Clamp01((r - 3f) / 6f);
+            float shore = Mathf.Clamp01((-z - 6f) / 14f) * 2.6f + Mathf.Clamp01((r - GroundRadius * 0.7f) / (GroundRadius * 0.3f)) * 4f;
+            return -0.1f + ridge + bumps - shore;
+        }
+
+        private void BuildGround()
+        {
+            const int n = 72;
+            var verts = new Vector3[(n + 1) * (n + 1)];
+            var cols = new Color32[verts.Length];
+            var tris = new int[n * n * 6];
+            for (int z = 0; z <= n; z++)
+            {
+                for (int x = 0; x <= n; x++)
+                {
+                    float px = (x / (float)n - 0.5f) * GroundRadius * 2f, pz = (z / (float)n - 0.5f) * GroundRadius * 2f;
+                    verts[z * (n + 1) + x] = new Vector3(px, GroundHeight(px, pz), pz);
+                    cols[z * (n + 1) + x] = new Color32(112, 116, 104, 255); // neutral tint for the textured terrain shader
+                }
+            }
+            int t = 0;
+            for (int z = 0; z < n; z++)
+            {
+                for (int x = 0; x < n; x++)
+                {
+                    int i = z * (n + 1) + x;
+                    tris[t++] = i; tris[t++] = i + n + 1; tris[t++] = i + 1;
+                    tris[t++] = i + 1; tris[t++] = i + n + 1; tris[t++] = i + n + 2;
+                }
+            }
+            var mesh = new Mesh { name = "menu_ground" };
+            mesh.SetVertices(verts);
+            mesh.SetColors(cols);
+            mesh.SetTriangles(tris, 0);
+            mesh.RecalculateNormals();
+            mesh.RecalculateBounds();
+            // A private copy of the terrain material: the shared one carries the game world's sea level
+            Material src = App.Materials.Terrain(-1.6f);
+            Material mat = src != null ? new Material(src) { name = "menu_terrain" } : App.Materials.Lit("lobby_ground", new Color(0.5f, 0.55f, 0.4f), 0f, 0f, 0f, 0f, 0.2f);
+            if (src != null)
+            {
+                mat.SetFloat("_SeaLevel", -1.6f);
+                mat.SetFloat("_Tiling", 0.35f);
+            }
+            Transform g = Spawn("Ground", mesh, mat, Vector3.zero);
+            g.GetComponent<MeshRenderer>().shadowCastingMode = ShadowCastingMode.Off;
+        }
+
+        private void SpawnNode(NodeKind kind, Vector3 pos, float scale, float rot, Material mat, Transform parent = null)
         {
             Transform t = Spawn(kind.ToString(), Models.Get(kind, 0), Models.NodeMaterial(kind, mat), pos);
+            if (parent != null) t.SetParent(parent, true);
             t.localScale = Vector3.one * scale;
             t.localRotation = Quaternion.Euler(0, rot, 0);
         }
@@ -234,8 +316,11 @@ namespace Survival.Client.Lobby
             }
 
             _focusX = Mathf.Lerp(_focusX, _focusTarget, 1f - Mathf.Exp(-Time.deltaTime * 4f));
-            float orbit = Mathf.Sin(t * 0.12f) * 0.35f;
-            Vector3 camPos = _camBase + new Vector3(orbit + _focusX * 1.1f, Mathf.Sin(t * 0.21f) * 0.06f, Mathf.Cos(t * 0.12f) * 0.15f);
+            // Opening dolly-in over 3.5 s, then a slow breathing drift around the camp
+            float intro = 1f - Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(_age / 3.5f));
+            _age += Time.deltaTime;
+            float orbit = Mathf.Sin(t * 0.09f) * 0.55f;
+            Vector3 camPos = _camBase + new Vector3(orbit + _focusX * 1.1f + intro * 1.6f, Mathf.Sin(t * 0.21f) * 0.06f + intro * 1.4f, Mathf.Cos(t * 0.09f) * 0.25f - intro * 3.5f);
             _cam.transform.localPosition = camPos;
             Vector3 look = _lookTarget + new Vector3(_focusX * 1.25f, 0, 0);
             _cam.transform.rotation = Quaternion.LookRotation(look - camPos) * Quaternion.Euler(0, 0, Mathf.Sin(t * 0.17f) * 0.6f);

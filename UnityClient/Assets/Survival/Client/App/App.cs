@@ -14,7 +14,8 @@ namespace Survival.Client
     public sealed class App : MonoBehaviour
     {
         public const string SceneBoot = "Boot";
-        public const string SceneLobby = "Lobby";
+        /// <summary>Main menu scene (island stage + menu). The older "Lobby" scene stays in the build unused.</summary>
+        public const string SceneLobby = "MainMenu";
         public const string SceneGame = "Game";
 
         public static App Instance { get; private set; }

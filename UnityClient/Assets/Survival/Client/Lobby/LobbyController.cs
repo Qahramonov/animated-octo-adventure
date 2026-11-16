@@ -27,6 +27,7 @@ namespace Survival.Client.Lobby
         private ConnectOverlay _connect;
         private Toaster _toaster;
         private readonly AnimatedButton[] _menuButtons = new AnimatedButton[5];
+        private CanvasGroup _logoGroup;
 
         public RectTransform Safe => _safe;
         public Toaster Toaster => _toaster;
@@ -68,22 +69,29 @@ namespace Survival.Client.Lobby
             _safe = UIFactory.SafeRoot(_canvas);
 
             // Left vignette for menu readability
-            Image vignette = UIFactory.Image(_canvas.transform, "Vignette", Color.white, UISprites.GradientH(new Color(0, 0, 0, 0.75f), new Color(0, 0, 0, 0f)));
+            Image vignette = UIFactory.Image(_canvas.transform, "Vignette", Color.white, UISprites.GradientH(new Color(0.02f, 0.025f, 0.03f, 0.82f), new Color(0, 0, 0, 0f)));
             vignette.rectTransform.anchorMin = new Vector2(0, 0);
             vignette.rectTransform.anchorMax = new Vector2(0.55f, 1);
             vignette.rectTransform.offsetMin = vignette.rectTransform.offsetMax = Vector2.zero;
             vignette.transform.SetAsFirstSibling();
 
-            // Logo
-            Text logo = UIFactory.Label(_safe, "Logo", GameInfo.Title, 110, Theme.Text, TextAnchor.UpperLeft, UIFactory.Display);
-            UIFactory.Place(logo.rectTransform, new Vector2(0, 1), new Vector2(600, 130), new Vector2(70, -150), new Vector2(0, 1));
-            UIFactory.AddShadow(logo, 0.7f, 4f);
-            Text sub = UIFactory.Label(_safe, "Sub", "S U R V I V A L", 30, Theme.Accent, TextAnchor.UpperLeft, UIFactory.Bold);
-            UIFactory.Place(sub.rectTransform, new Vector2(0, 1), new Vector2(600, 40), new Vector2(76, -272), new Vector2(0, 1));
+            // Logo: display face, thin accent rule, letter-spaced subtitle
+            Text logo = UIFactory.Label(_safe, "Logo", GameInfo.Title, 124, Theme.Text, TextAnchor.UpperLeft, UIFactory.Display);
+            UIFactory.Place(logo.rectTransform, new Vector2(0, 1), new Vector2(640, 140), new Vector2(72, -96), new Vector2(0, 1));
+            UIFactory.AddShadow(logo, 0.6f, 3f);
+            Image rule = UIFactory.Image(_safe, "Rule", Theme.Accent, UISprites.Rounded(2));
+            UIFactory.Place(rule.rectTransform, new Vector2(0, 1), new Vector2(64, 4), new Vector2(78, -244), new Vector2(0, 1));
+            Text sub = UIFactory.Label(_safe, "Sub", "S U R V I V A L", 26, Theme.Accent, TextAnchor.MiddleLeft, UIFactory.Bold);
+            UIFactory.Place(sub.rectTransform, new Vector2(0, 1), new Vector2(600, 40), new Vector2(158, -228), new Vector2(0, 1));
+            _logoGroup = logo.gameObject.AddComponent<CanvasGroup>();
 
-            // Menu
+            // Menu: glass card with flat rows (icon-free, left accent bar on hover/press)
             _menu = UIFactory.Rect(_safe, "Menu");
-            UIFactory.Place(_menu, new Vector2(0, 0.5f), new Vector2(430, 520), new Vector2(70, -90), new Vector2(0, 0.5f));
+            UIFactory.Place(_menu, new Vector2(0, 0.5f), new Vector2(420, 470), new Vector2(64, -96), new Vector2(0, 0.5f));
+            Image card = UIFactory.Image(_menu, "Card", Theme.Glass, UISprites.Rounded(18));
+            UIFactory.Stretch(card.rectTransform);
+            Image cardLine = UIFactory.Image(_menu, "CardLine", Theme.Line, UISprites.Rounded(18, 2));
+            UIFactory.Stretch(cardLine.rectTransform);
             string[] keys = { "servers", "inventory", "profile", "settings", "exit" };
             System.Action[] actions =
             {
@@ -95,23 +103,27 @@ namespace Survival.Client.Lobby
             };
             for (int i = 0; i < keys.Length; i++)
             {
-                AnimatedButton b = UIFactory.Button(_menu, keys[i], Loc.T(keys[i]), actions[i], 34, false, new Vector2(400, 84));
-                UIFactory.Place(b.Background.rectTransform, new Vector2(0, 1), new Vector2(400, 84), new Vector2(0, -i * 100f), new Vector2(0, 1));
+                AnimatedButton b = UIFactory.Button(_menu, keys[i], Loc.T(keys[i]), actions[i], 30, false, new Vector2(388, 78));
+                UIFactory.Place(b.Background.rectTransform, new Vector2(0.5f, 1), new Vector2(388, 78), new Vector2(0, -16 - i * 88f), new Vector2(0.5f, 1));
+                b.SetColor(new Color(1f, 1f, 1f, i == keys.Length - 1 ? 0.0f : 0.035f));
                 b.Label.alignment = TextAnchor.MiddleLeft;
-                b.Label.rectTransform.offsetMin = new Vector2(36, 0);
-                Image accent = UIFactory.Image(b.Background.transform, "Accent", Theme.Accent, UISprites.Rounded(4));
-                accent.rectTransform.anchorMin = new Vector2(0, 0.2f);
-                accent.rectTransform.anchorMax = new Vector2(0, 0.8f);
-                accent.rectTransform.sizeDelta = new Vector2(6, 0);
-                accent.rectTransform.anchoredPosition = new Vector2(16, 0);
+                b.Label.rectTransform.offsetMin = new Vector2(38, 0);
+                b.Label.color = i == keys.Length - 1 ? Theme.TextDim : Theme.Text;
+                Transform border = b.Background.transform.Find("Border");
+                if (border != null) border.gameObject.SetActive(false);
+                Image accent = UIFactory.Image(b.Background.transform, "Accent", Theme.Accent, UISprites.Rounded(3));
+                accent.rectTransform.anchorMin = new Vector2(0, 0.28f);
+                accent.rectTransform.anchorMax = new Vector2(0, 0.72f);
+                accent.rectTransform.sizeDelta = new Vector2(4, 0);
+                accent.rectTransform.anchoredPosition = new Vector2(18, 0);
                 _menuButtons[i] = b;
             }
 
             // PLAY
             var playRoot = UIFactory.Rect(_safe, "PlayRoot");
             UIFactory.Place(playRoot, new Vector2(1, 0), new Vector2(520, 200), new Vector2(-60, 50), new Vector2(1, 0));
-            Image glow = UIFactory.Image(playRoot, "Glow", Theme.Accent.WithAlpha(0.45f), UISprites.Glow(128));
-            UIFactory.Place(glow.rectTransform, new Vector2(0.5f, 0.62f), new Vector2(640, 260));
+            Image glow = UIFactory.Image(playRoot, "Glow", Theme.Accent.WithAlpha(0.28f), UISprites.Glow(128));
+            UIFactory.Place(glow.rectTransform, new Vector2(0.5f, 0.62f), new Vector2(600, 220));
             glow.gameObject.AddComponent<Pulse>();
             _play = UIFactory.Button(playRoot, "Play", Loc.T("play"), OnPlay, 64, true, new Vector2(500, 130));
             UIFactory.Place(_play.Background.rectTransform, new Vector2(0.5f, 1), new Vector2(500, 130), Vector2.zero, new Vector2(0.5f, 1));
@@ -120,7 +132,7 @@ namespace Survival.Client.Lobby
             UIFactory.Place(_playServer.rectTransform, new Vector2(0.5f, 0), new Vector2(500, 50), new Vector2(0, 10), new Vector2(0.5f, 0));
 
             // Profile chip (top-left of the right side)
-            Image prof = UIFactory.Panel(_safe, "ProfileChip", Theme.Panel, 40);
+            Image prof = UIFactory.Panel(_safe, "ProfileChip", Theme.Glass, 18);
             UIFactory.Place(prof.rectTransform, new Vector2(1, 1), new Vector2(430, 92), new Vector2(-470, -30), new Vector2(1, 1));
             prof.gameObject.AddComponent<Button>().onClick.AddListener(() => Open<ProfilePanel>());
             Image avatar = UIFactory.Image(prof.transform, "Avatar", Theme.Accent, UISprites.Circle(96));
@@ -133,7 +145,7 @@ namespace Survival.Client.Lobby
             UIFactory.Place(pid.rectTransform, new Vector2(0, 0.5f), new Vector2(320, 30), new Vector2(100, -18), new Vector2(0, 0.5f));
 
             // Server chip (top-right)
-            Image chip = UIFactory.Panel(_safe, "ServerChip", Theme.Panel, 40);
+            Image chip = UIFactory.Panel(_safe, "ServerChip", Theme.Glass, 18);
             UIFactory.Place(chip.rectTransform, new Vector2(1, 1), new Vector2(420, 92), new Vector2(-30, -30), new Vector2(1, 1));
             chip.gameObject.AddComponent<Button>().onClick.AddListener(() => Open<ServerBrowserPanel>());
             _serverChipDot = UIFactory.Image(chip.transform, "Dot", Theme.Neutral, UISprites.Circle(32));
@@ -155,7 +167,17 @@ namespace Survival.Client.Lobby
                 CanvasGroup g = UIAnim.Group(_menuButtons[i]);
                 g.alpha = 0f;
             }
-            yield return new WaitForSecondsRealtime(0.25f);
+            // Logo fades in while the camera dollies in
+            if (_logoGroup != null)
+            {
+                _logoGroup.alpha = 0f;
+                for (float t = 0f; t < 1f; t += Time.unscaledDeltaTime / 0.9f)
+                {
+                    _logoGroup.alpha = Mathf.SmoothStep(0f, 1f, t);
+                    yield return null;
+                }
+                _logoGroup.alpha = 1f;
+            }
             for (int i = 0; i < _menuButtons.Length; i++)
             {
                 RectTransform rt = _menuButtons[i].Background.rectTransform;
